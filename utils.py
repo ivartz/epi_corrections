@@ -5,9 +5,15 @@ Created on Mon Nov  5 13:27:16 2018
 
 @author: ivar
 """
+
+# Global variables:
+NIFTI_folder_name= "../NIFTI"
+TOPUP_folder_name = "../TOPUP"
+
 import os
 import sys
-
+from fsl import topup_compute
+from nipype.interfaces.nipy.utils import Similarity
 from fsl import split_NIFTI_file_along_time_axis_and_move, \
     merge_blip_down_blip_up_first_temporary_window
 
@@ -180,17 +186,18 @@ def determine_output_path(root_folder_name, \
 
 def split_and_merge_first_temporary(output_path, \
                                     blip_down_file, \
-                                    blip_up_file, \
-                                    blip_down_file_name , \
-                                    blip_up_file_name):
+                                    blip_up_file):
+    
+    blip_down_file_name = extract_file_name(blip_down_file)
+    blip_up_file_name = extract_file_name(blip_up_file)
     
     split_NIFTI_file_along_time_axis_and_move(output_path, \
                                               blip_down_file, \
                                               blip_down_file_name)
+                                              
     split_NIFTI_file_along_time_axis_and_move(output_path, \
                                               blip_up_file, \
                                               blip_up_file_name)
-    
     
     blip_down_blip_up_temporary_window_file_name = \
         determine_merged_blips_file_name(blip_down_file_name, \
@@ -232,3 +239,115 @@ def split_and_merge_first_temporary(output_path, \
                                                       blip_down_temporary_window_file, \
                                                       blip_up_temporary_window_file)
     return blip_down_blip_up_temporary_window_file
+
+
+def make_comparison_report(output_path, \
+                           corrected_4D_file):
+    
+    # Source:
+    # https://nipype.readthedocs.io/en/latest/interfaces/generated/interfaces.nipy/utils.html
+    
+    corrected_4D_file_name = extract_file_name(corrected_4D_file)
+    
+    split_NIFTI_file_along_time_axis_and_move(output_path, \
+                                              corrected_4D_file ,\
+                                              corrected_4D_file_name)
+    
+    # This works because we know that _0000.nii and _0001.nii
+    # differ after fslsplit
+    corrected_blip_down_file = corrected_4D_file[:-len(".nii")] + "_0000.nii"
+    corrected_blip_down_file_name = extract_file_name(corrected_blip_down_file)
+    corrected_blip_up_file = corrected_4D_file[:-len(".nii")] + "_0001.nii"
+    corrected_blip_up_file_name = extract_file_name(corrected_blip_up_file)
+    
+    title = corrected_blip_down_file_name  + " and " + corrected_blip_up_file_name
+    header = "Correlation Coefficient (CC),Correlation Ratio (CR),L1-norm based Correlation Ratio (L1CR),Mutual Information (MI),Normalized Mutual Inrofmation (NMI)"
+    
+    report = ""
+    
+    similarity = Similarity()
+    similarity.inputs.volume1 = corrected_blip_down_file
+    similarity.inputs.volume2 = corrected_blip_up_file
+    similarity.inputs.metric = 'cc'
+    report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")] + ","
+    
+    similarity = Similarity()
+    similarity.inputs.volume1 = corrected_blip_down_file
+    similarity.inputs.volume2 = corrected_blip_up_file
+    similarity.inputs.metric = 'cr'
+    report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")] + ","
+    
+    similarity = Similarity()
+    similarity.inputs.volume1 = corrected_blip_down_file
+    similarity.inputs.volume2 = corrected_blip_up_file
+    similarity.inputs.metric = 'crl1'
+    report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")] + ","
+    
+    similarity = Similarity()
+    similarity.inputs.volume1 = corrected_blip_down_file
+    similarity.inputs.volume2 = corrected_blip_up_file
+    similarity.inputs.metric = 'mi'
+    report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")] + ","
+    
+    similarity = Similarity()
+    similarity.inputs.volume1 = corrected_blip_down_file
+    similarity.inputs.volume2 = corrected_blip_up_file
+    similarity.inputs.metric = 'nmi'
+    report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")]
+    
+    data = [title, "", header, report]
+    
+    for d in data:
+        print(d)
+    
+    report_name = corrected_4D_file[:-len(".nii")] + "_similarity.txt"   
+    
+    with open(report_name , 'w') as f:
+        for line in data:
+            f.write("%s\n" % line)
+
+def topup_pipeline(blip_down_file, blip_up_file):
+
+    blip_down_file_name = extract_file_name(blip_down_file)
+    
+    print("blip_down_file_name: %s" % blip_down_file_name)
+    
+    blip_up_file_name = extract_file_name(blip_up_file)
+    
+    print("blip_up_file_name: %s" % blip_up_file_name)
+    
+    output_path = determine_output_path(TOPUP_folder_name, \
+                              NIFTI_folder_name, \
+                              blip_down_file, \
+                              blip_up_file, \
+                              blip_down_file_name, \
+                              blip_up_file_name)
+        
+    print("output_path: %s" % output_path)
+    
+    create_directory_if_not_exists(output_path)
+    
+    merged_image_for_topup_compute_file = split_and_merge_first_temporary(output_path, \
+                                                                          blip_down_file , \
+                                                                          blip_up_file)    
+    print(merged_image_for_topup_compute_file)
+    
+    topup_datain = "topup_config/aquisition_parameters.txt"
+    topup_config = "topup_config/b02b0.cnf"
+    
+    # Finally, compute the off-resonance field and correct the EPI pair in
+     #merged_image_for_topup_compute according to this field
+    corrected_4D_file = topup_compute(merged_image_for_topup_compute_file, \
+                                      topup_datain, \
+                                      topup_config)
+    
+    make_comparison_report(output_path, \
+                           corrected_4D_file)
+
+def print_detected_data(GE_pairs, SE_pairs):
+    for g in GE_pairs:
+        print(g[0])
+        print(g[1])    
+    for s in SE_pairs:
+        print(s[0])
+        print(s[1])

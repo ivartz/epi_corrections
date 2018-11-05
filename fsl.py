@@ -12,7 +12,8 @@ from execute import run_shell_command
 # Splitting NIFTI files along time axis and moving to destination for correction
 
 def split_NIFTI_file_along_time_axis_and_move(output_path, \
-                                              blip_file, blip_file_name):
+                                              blip_file, \
+                                              blip_file_name):
     # blip_file is the relative path from script root + file name
     # blip_file_name is the file name only
     
@@ -65,18 +66,18 @@ def merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_w
               blip_down_blip_up_temporary_window_file + \
               " using fslmerge in subprocess shell call")
 
-def topup_compute(merged_image_for_topup_compute, \
+def topup_compute(merged_image_for_topup_compute_file, \
                   datain, config):
     
     process_msg_prefix = "PID %i: " % os.getpid()
 
-    output_base_name = merged_image_for_topup_compute[:-len(".nii")]
+    output_base_name = merged_image_for_topup_compute_file[:-len(".nii")]
     out_name = output_base_name + "_generic_out"
     fout_name = output_base_name + "_field"
     iout_name = output_base_name + "_corrected"
     
     pre_command = 'FSLOUTPUTTYPE=NIFTI'
-    command = 'topup --imain=' + '"' + merged_image_for_topup_compute + \
+    command = 'topup --imain=' + '"' + merged_image_for_topup_compute_file + \
         '"' + ' ' + '--datain='  + '"' + datain + \
         '"' + ' ' + '--config=' + '"' + config + \
         '"' + ' ' + '--out='  + '"' + out_name + \
@@ -88,6 +89,8 @@ def topup_compute(merged_image_for_topup_compute, \
     
     print(process_msg_prefix + "Successfully computed off-resonance field " + \
               fout_name + " based on " + \
-              merged_image_for_topup_compute + " and used it to correct " + \
-              merged_image_for_topup_compute + " into " + \
+              merged_image_for_topup_compute_file + " and used it to correct " + \
+              merged_image_for_topup_compute_file + " into " + \
               iout_name)
+    
+    return iout_name + ".nii"
