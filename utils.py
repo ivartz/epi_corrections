@@ -241,6 +241,9 @@ def split_and_merge_first_temporary(output_path, \
     return blip_down_blip_up_temporary_window_file
 
 
+#def make_comparison_report_init(q):
+#    make_comparison_report.q = q
+
 def make_comparison_report(output_path, \
                            corrected_4D_file):
     
@@ -305,6 +308,18 @@ def make_comparison_report(output_path, \
     with open(report_name , 'w') as f:
         for line in data:
             f.write("%s\n" % line)
+    
+    # Return report so that topup_pipeline cam put it in a summary queue.
+    # Put the report to the queue along with the nifti file.
+    return report + "," + corrected_4D_file
+
+def print_detected_data(GE_pairs, SE_pairs):
+    for g in GE_pairs:
+        print(g[0])
+        print(g[1])    
+    for s in SE_pairs:
+        print(s[0])
+        print(s[1])
 
 def topup_pipeline(blip_down_file, blip_up_file):
 
@@ -341,13 +356,29 @@ def topup_pipeline(blip_down_file, blip_up_file):
                                       topup_datain, \
                                       topup_config)
     
-    make_comparison_report(output_path, \
-                           corrected_4D_file)
+    report = make_comparison_report(output_path, corrected_4D_file)
 
-def print_detected_data(GE_pairs, SE_pairs):
-    for g in GE_pairs:
-        print(g[0])
-        print(g[1])    
-    for s in SE_pairs:
-        print(s[0])
-        print(s[1])
+    topup_pipeline.q.put(report)
+    
+def topup_pipeline_init(q):
+    topup_pipeline.q = q
+    
+def report_listener(q):
+    '''listens for messages on the q, writes to file. '''
+    report_file = TOPUP_folder_name + "/" + "corrected_blips_similarities.txt"
+    
+    header = "Correlation Coefficient (CC),Correlation Ratio (CR),L1-norm based Correlation Ratio (L1CR),Mutual Information (MI),Normalized Mutual Inrofmation (NMI),Blip-up Blip-down File Name"
+
+    f = open(report_file, 'w') 
+    f.write(str(header) + '\n')
+    f.flush()
+    f.close()
+
+    f = open(report_file, 'a') 
+    while 1:
+        m = q.get()
+        if m == 'kill':
+            break
+        f.write(str(m) + '\n')
+        f.flush()
+    f.close()
