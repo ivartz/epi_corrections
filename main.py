@@ -29,14 +29,14 @@ def main():
     q = manager.Queue()
     
     # Multiprocessing pool of 8 workers (= number of physical CPU cores)
-    p = mp.Pool(None, topup_pipeline_init, [q], maxtasksperchild=1)
+    p = mp.Pool(8, topup_pipeline_init, [q], maxtasksperchild=1)
     
     # Put report listener to work first
     p.apply_async(report_listener, (q, ))
     
     # Run topup pipeline on chunks of EPI pairs concurrently,
     # working on GE pairs first.
-    p.starmap(topup_pipeline, EPI_pairs_to_correct[0:1])
+    p.starmap(topup_pipeline, EPI_pairs_to_correct)
     
     q.put('kill')
     p.close()
