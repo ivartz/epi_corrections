@@ -6,16 +6,16 @@ Created on Mon Nov  5 13:27:16 2018
 @author: ivar
 """
 
-# Global variables:
-NIFTI_folder_name= "../NIFTI"
-TOPUP_folder_name = "../TOPUP"
-
 import os
 import sys
+from time import sleep
 from fsl import topup_compute
 from nipype.interfaces.nipy.utils import Similarity
-from fsl import split_NIFTI_file_along_time_axis_and_move, \
-    merge_blip_down_blip_up_first_temporary_window
+from fsl import extract_first_temporary_window_and_save, \
+    merge_blip_down_blip_up_first_temporary_window, \
+    add_duplicate_slices, \
+    split_along_temporary_axis_and_save, \
+    remove_first_and_last_slices_and_save
 
 def remove_substring_after_last_slash(string_with_slashes):
     # Index for last "/" in string_with_slashes
@@ -100,7 +100,7 @@ def determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file_name):
         print(file_name)
         sys.exit(1)
     
-def determine_merged_blips_file_name(blip_down_file_name, \
+def determine_merged_blips_file_name_topup(blip_down_file_name, \
                                      blip_up_file_name, \
                                     temporary_window_number="0000"):
     # The returned name must correspond to the naming scheme
@@ -109,7 +109,7 @@ def determine_merged_blips_file_name(blip_down_file_name, \
     if not determine_e1_or_e2(blip_down_file_name) == \
     determine_e1_or_e2(blip_up_file_name):
         print("PID %i: Error, the arguments blip_down_file_name and \
-        blip_up_file_name in the determine_merged_blips_file_name \
+        blip_up_file_name in the determine_merged_blips_file_name_topup \
         function coud not be identified with the same echo sequence \
         (e1 (GE) or e2 (SE)), aborting process" % os.getpid())
         sys.exit(1)
@@ -137,11 +137,11 @@ def determine_merged_blips_file_name(blip_down_file_name, \
         blip_down_number_before_echo_type_in_name + "_" + \
         blip_up_number_before_echo_type_in_name + "_" + \
         determine_e1_or_e2(blip_down_file_name) + "_" + \
-        temporary_window_number + ".nii"
+        temporary_window_number + "_prep_topup.nii"
     
     return merged_blips_file_name
 
-def determine_blip_file_name_for_window(blip_direction , \
+def determine_blip_file_name_for_window_topup(blip_direction , \
                                         blip_down_file_name, \
                                         blip_up_file_name, \
                                         temporary_window_number="0000"):
@@ -159,16 +159,26 @@ def determine_blip_file_name_for_window(blip_direction , \
         temporary_window_number + ".nii"
     
     else:
-        print(process_msg_prefix + " Error: determine_blip_file_name_for_window: \
+        print(process_msg_prefix + " Error: determine_blip_file_name_for_window_topup: \
         the argument blip_direction is not correctly set")
         sys.exit(1)
 
-def create_directory_if_not_exists(output_path):
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-    else:
-        print("create_directory_if_not_exists: %s \
-              already exists, not creating" % output_path)
+def create_directory_if_not_exists(output_path):    
+        while True:
+            try:
+                if not os.path.exists(output_path):
+                    os.makedirs(output_path)
+                else:
+                    print("create_directory_if_not_exists: %s \
+                          already exists, not creating" % output_path)
+                break
+            except OSError as e:
+                if e.errno != os.errno.EEXIST:
+                    raise
+                # There might be a race condition, sleeping for 50 ms
+                # to try again later
+                sleep(0.05)
+                pass
 
 def determine_output_path(root_folder_name, \
                           NIFTI_folder_name, \
@@ -184,36 +194,23 @@ def determine_output_path(root_folder_name, \
         
     return output_path
 
-def split_and_merge_first_temporary(output_path, \
+def split_and_merge_first_temporary_for_topup(output_path, \
                                     blip_down_file, \
                                     blip_up_file):
     
     blip_down_file_name = extract_file_name(blip_down_file)
     blip_up_file_name = extract_file_name(blip_up_file)
     
-    split_NIFTI_file_along_time_axis_and_move(output_path, \
+    extract_first_temporary_window_and_save(output_path, \
                                               blip_down_file, \
                                               blip_down_file_name)
                                               
-    split_NIFTI_file_along_time_axis_and_move(output_path, \
+    extract_first_temporary_window_and_save(output_path, \
                                               blip_up_file, \
                                               blip_up_file_name)
-    
-    blip_down_blip_up_temporary_window_file_name = \
-        determine_merged_blips_file_name(blip_down_file_name, \
-                                         blip_up_file_name)
-        
-    print("blip_down_blip_up_temporary_window_file_name: %s" % \
-          blip_down_blip_up_temporary_window_file_name)
-    
-    blip_down_blip_up_temporary_window_file = output_path + "/" + \
-        blip_down_blip_up_temporary_window_file_name
-    
-    print("blip_down_blip_up_temporary_window_file: %s" % \
-          blip_down_blip_up_temporary_window_file)
-    
+            
     blip_down_temporary_window_file_name = \
-        determine_blip_file_name_for_window("blip_down", \
+        determine_blip_file_name_for_window_topup("blip_down", \
                                             blip_down_file_name, \
                                             blip_up_file_name)
     
@@ -224,7 +221,7 @@ def split_and_merge_first_temporary(output_path, \
           blip_down_temporary_window_file)
     
     blip_up_temporary_window_file_name = \
-        determine_blip_file_name_for_window("blip_up", \
+        determine_blip_file_name_for_window_topup("blip_up", \
                                             blip_down_file_name, \
                                             blip_up_file_name)
     
@@ -233,11 +230,29 @@ def split_and_merge_first_temporary(output_path, \
     
     print("blip_up_temporary_window_file: %s" % \
           blip_up_temporary_window_file)
+
+    # FSL topup specific operations: add dulicate top and bottom slice
+    # along z-axis, since the topup algorithm will remove top and bottom slice.
+    blip_down_temporary_window_file_prep = add_duplicate_slices(output_path, blip_down_temporary_window_file_name)
+    blip_up_temporary_window_file_prep = add_duplicate_slices(output_path, blip_up_temporary_window_file_name)
     
+    blip_down_blip_up_temporary_window_file_name = \
+        determine_merged_blips_file_name_topup(blip_down_file_name, \
+                                         blip_up_file_name)
+        
+    print("blip_down_blip_up_temporary_window_file_name: %s" % \
+          blip_down_blip_up_temporary_window_file_name)
     
+    blip_down_blip_up_temporary_window_file = output_path + "/" + \
+        blip_down_blip_up_temporary_window_file_name
+    
+    print("blip_down_blip_up_temporary_window_file: %s" % \
+          blip_down_blip_up_temporary_window_file)    
+    
+
     merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file, \
-                                                      blip_down_temporary_window_file, \
-                                                      blip_up_temporary_window_file)
+                                                      blip_down_temporary_window_file_prep, \
+                                                      blip_up_temporary_window_file_prep)
     return blip_down_blip_up_temporary_window_file
 
 
@@ -252,7 +267,7 @@ def make_comparison_report(output_path, \
     
     corrected_4D_file_name = extract_file_name(corrected_4D_file)
     
-    split_NIFTI_file_along_time_axis_and_move(output_path, \
+    split_along_temporary_axis_and_save(output_path, \
                                               corrected_4D_file ,\
                                               corrected_4D_file_name)
     
@@ -331,8 +346,8 @@ def topup_pipeline(blip_down_file, blip_up_file):
     
     print("blip_up_file_name: %s" % blip_up_file_name)
     
-    output_path = determine_output_path(TOPUP_folder_name, \
-                              NIFTI_folder_name, \
+    output_path = determine_output_path(topup_pipeline.TOPUP_folder_name, \
+                              topup_pipeline.NIFTI_folder_name, \
                               blip_down_file, \
                               blip_up_file, \
                               blip_down_file_name, \
@@ -340,34 +355,44 @@ def topup_pipeline(blip_down_file, blip_up_file):
         
     print("output_path: %s" % output_path)
     
+    #print("DBG: create if not exists: %s" % output_path)
+    
     create_directory_if_not_exists(output_path)
     
-    merged_image_for_topup_compute_file = split_and_merge_first_temporary(output_path, \
+    
+    merged_image_for_topup_compute_file = split_and_merge_first_temporary_for_topup(output_path, \
                                                                           blip_down_file , \
                                                                           blip_up_file)    
-    print(merged_image_for_topup_compute_file)
-    
+    #"""
     topup_datain = "topup_config/aquisition_parameters.txt"
     topup_config = "topup_config/b02b0.cnf"
     
     # Finally, compute the off-resonance field and correct the EPI pair in
-     #merged_image_for_topup_compute according to this field
+    # merged_image_for_topup_compute according to this field
     corrected_4D_file = topup_compute(merged_image_for_topup_compute_file, \
                                       topup_datain, \
                                       topup_config)
     
-    report = make_comparison_report(output_path, corrected_4D_file)
+    corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_path, \
+                                                                    extract_file_name(corrected_4D_file))
+    
+    report = make_comparison_report(output_path, corrected_4D_file_postp)
 
     topup_pipeline.q.put(report)
+    #"""
     
-def topup_pipeline_init(q):
+def topup_pipeline_init(q, NIFTI_folder_name, TOPUP_folder_name):
     topup_pipeline.q = q
+    topup_pipeline.NIFTI_folder_name = NIFTI_folder_name
+    topup_pipeline.TOPUP_folder_name = TOPUP_folder_name
     
-def report_listener(q):
+def report_listener(q, TOPUP_folder_name):
     '''listens for messages on the q, writes to file. '''
-    report_file = TOPUP_folder_name + "/" + "corrected_blips_similarities.txt"
+    report_file = TOPUP_folder_name + "/" + "corrected_blips_similarities.txt"    
     
     header = "Correlation Coefficient (CC),Correlation Ratio (CR),L1-norm based Correlation Ratio (L1CR),Mutual Information (MI),Normalized Mutual Inrofmation (NMI),Blip-up Blip-down File Name"
+
+    create_directory_if_not_exists(TOPUP_folder_name)
 
     f = open(report_file, 'w') 
     f.write(str(header) + '\n')
