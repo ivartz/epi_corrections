@@ -196,3 +196,27 @@ def remove_first_and_last_slices_and_save(output_path, file_name):
               output_file)
     
     return output_file
+
+
+def copy_header(source_nii_file, dest_nii_file):
+    # Make NIFTI header of dest_nii_file 
+    # equal to NIFTI header or source_nii_file
+    
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    pre_command = 'FSLOUTPUTTYPE=NIFTI'
+                    
+    # This command will extract the 2D lowest slice along z axis
+    # to the file output_zmin.nii
+    command = 'fslcpgeom ' + \
+                '"' + source_nii_file + '"' + ' '  + \
+                '"' + dest_nii_file + '"'
+
+    # Concatenate all the commands into a one-liner command (a large string string to be evaluated in a shell environment)
+    full_command = pre_command + ' && ' + command
+      
+    run_shell_command(full_command)
+    
+    print(process_msg_prefix + "Successfully replaced the geometry header info of " + \
+              dest_nii_file + "  with the the geometry header info of " + \
+              source_nii_file)

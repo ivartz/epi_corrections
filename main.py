@@ -4,6 +4,23 @@
 Created on Mon Nov  5 13:26:27 2018
 
 @author: ivar
+
+Recommended standalone run:
+python3 main.py 2>&1 | tee reports/pipeline_report_yyyy_mm_dd.txt
+for instance
+
+python3 main.py 2>&1 | tee reports/pipeline_report_2018_11_23.txt
+
+Running the pipeline in this way enshures that both stdout and strerr
+are shown in the command line while at the same time they are saved to 
+file for later debuging. Note that since the pipeline uses 
+multiprocessing, the order of output messages in the file and
+terminal output are not in a strictly specified order when comparing
+outputs from multiple runs.
+This is because multiple processes are competing on resources on the OS,
+and the OS scheduler's choices of resource allocation for each processes
+are not fixed and dependent on other processes in the operating system. 
+It is a preemptive dynamic scheduler (dynamic priority scheduling).
 """
 
 import multiprocessing as mp

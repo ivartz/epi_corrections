@@ -15,7 +15,8 @@ from fsl import extract_first_temporary_window_and_save, \
     merge_blip_down_blip_up_first_temporary_window, \
     add_duplicate_slices, \
     split_along_temporary_axis_and_save, \
-    remove_first_and_last_slices_and_save
+    remove_first_and_last_slices_and_save, \
+    copy_header
 
 def remove_substring_after_last_slash(string_with_slashes):
     # Index for last "/" in string_with_slashes
@@ -102,7 +103,8 @@ def determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file_name):
     
 def determine_merged_blips_file_name_topup(blip_down_file_name, \
                                      blip_up_file_name, \
-                                    temporary_window_number="0000"):
+                                    temporary_window_number="0000", \
+                                    prep=True):
     # The returned name must correspond to the naming scheme
     # followed by the use of fslsplit in the script.
     
@@ -130,6 +132,11 @@ def determine_merged_blips_file_name_topup(blip_down_file_name, \
         blip_up_file_name[len(blip_down_blip_up_longest_common_substring_from_beginning + \
            blip_up_type) + 1:][:-(len(echo_type + ".nii") + 1)]
 
+    if prep:
+        file_ending = "_prep_topup.nii"
+    else:
+        file_ending = ".nii"
+
     merged_blips_file_name = \
         blip_down_blip_up_longest_common_substring_from_beginning + \
         blip_down_type + "_" + \
@@ -137,7 +144,7 @@ def determine_merged_blips_file_name_topup(blip_down_file_name, \
         blip_down_number_before_echo_type_in_name + "_" + \
         blip_up_number_before_echo_type_in_name + "_" + \
         determine_e1_or_e2(blip_down_file_name) + "_" + \
-        temporary_window_number + "_prep_topup.nii"
+        temporary_window_number + file_ending
     
     return merged_blips_file_name
 
@@ -198,6 +205,7 @@ def split_and_merge_first_temporary_for_topup(output_path, \
                                     blip_down_file, \
                                     blip_up_file):
     
+    # Splitting part
     blip_down_file_name = extract_file_name(blip_down_file)
     blip_up_file_name = extract_file_name(blip_up_file)
     
@@ -236,31 +244,65 @@ def split_and_merge_first_temporary_for_topup(output_path, \
     blip_down_temporary_window_file_prep = add_duplicate_slices(output_path, blip_down_temporary_window_file_name)
     blip_up_temporary_window_file_prep = add_duplicate_slices(output_path, blip_up_temporary_window_file_name)
     
+    
+    # Merging part
+    
+    # determine file name for merged file that is prepated for topup
+    # prepared means that the file has added duplicate zmin and zmax slices
     blip_down_blip_up_temporary_window_file_name = \
         determine_merged_blips_file_name_topup(blip_down_file_name, \
                                          blip_up_file_name)
+
+    # determine file name for merged file that is not prepared
+    # for topup. 
+    # not prepated means that the file shall not have duplicate
+    # slices added, and that it is a direct merge.
+    # The point for having this is for later easier coregistration.
+    # Coregistration for measure of correctness of FSL topup 
+    # distortion correction.
+    blip_down_blip_up_temporary_window_file_name_raw = \
+        determine_merged_blips_file_name_topup(blip_down_file_name, \
+                                         blip_up_file_name, \
+                                         prep=False)
+
         
     print("blip_down_blip_up_temporary_window_file_name: %s" % \
           blip_down_blip_up_temporary_window_file_name)
     
+    # prepend relative path to make blip_down_blip_up_temporary_window_file
     blip_down_blip_up_temporary_window_file = output_path + "/" + \
         blip_down_blip_up_temporary_window_file_name
+    
+    # prepend relative path to make blip_down_blip_up_temporary_window_file_raw
+    blip_down_blip_up_temporary_window_file_raw = output_path + "/" + \
+        blip_down_blip_up_temporary_window_file_name_raw
     
     print("blip_down_blip_up_temporary_window_file: %s" % \
           blip_down_blip_up_temporary_window_file)    
     
-
+    # merge together the volumes with added duplicate slices
     merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file, \
                                                       blip_down_temporary_window_file_prep, \
                                                       blip_up_temporary_window_file_prep)
-    return blip_down_blip_up_temporary_window_file
+    # merge together the volumes with no added duplicate slices
+    # for later ease of performance comparison
+    merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file_raw, \
+                                                      blip_down_temporary_window_file, \
+                                                      blip_up_temporary_window_file)
+
+    return blip_down_blip_up_temporary_window_file, \
+            blip_down_blip_up_temporary_window_file_raw, \
+            blip_down_temporary_window_file, \
+            blip_up_temporary_window_file
 
 
-#def make_comparison_report_init(q):
-#    make_comparison_report.q = q
+#def evaluate_topup_performance_init(q):
+#    evaluate_topup_performance.q = q
 
-def make_comparison_report(output_path, \
-                           corrected_4D_file):
+def evaluate_topup_performance(output_path, \
+                               blip_down_window_file, \
+                               blip_up_window_file, \
+                               corrected_4D_file):
     
     # Source:
     # https://nipype.readthedocs.io/en/latest/interfaces/generated/interfaces.nipy/utils.html
@@ -277,6 +319,14 @@ def make_comparison_report(output_path, \
     corrected_blip_down_file_name = extract_file_name(corrected_blip_down_file)
     corrected_blip_up_file = corrected_4D_file[:-len(".nii")] + "_0001.nii"
     corrected_blip_up_file_name = extract_file_name(corrected_blip_up_file)
+    
+    # Replace geometry info in header of corrected_blip_down_file
+    # and corrected_blip_up_file with geometry info in header
+    # of blip_down_window_file and blip_up_window_file respectively 
+    # (non-corrected temporary window files)
+    
+    copy_header(blip_down_window_file, corrected_blip_down_file)
+    copy_header(blip_up_window_file, corrected_blip_up_file)
     
     title = corrected_blip_down_file_name  + " and " + corrected_blip_up_file_name
     header = "Correlation Coefficient (CC),Correlation Ratio (CR),L1-norm based Correlation Ratio (L1CR),Mutual Information (MI),Normalized Mutual Inrofmation (NMI)"
@@ -312,7 +362,9 @@ def make_comparison_report(output_path, \
     similarity.inputs.volume2 = corrected_blip_up_file
     similarity.inputs.metric = 'nmi'
     report += str(similarity.run().outputs)[len("similarity =  "):-len("\n")]
-    
+        
+    # "" since we want to skip a line between title and header
+    # in the file
     data = [title, "", header, report]
     
     for d in data:
@@ -360,7 +412,10 @@ def topup_pipeline(blip_down_file, blip_up_file):
     create_directory_if_not_exists(output_path)
     
     
-    merged_image_for_topup_compute_file = split_and_merge_first_temporary_for_topup(output_path, \
+    merged_image_for_topup_compute_file, \
+    merged_image_file_raw, \
+    blip_down_file_first_temp_window_moved, \
+    blip_up_file_first_temp_window_moved = split_and_merge_first_temporary_for_topup(output_path, \
                                                                           blip_down_file , \
                                                                           blip_up_file)    
     #"""
@@ -376,7 +431,10 @@ def topup_pipeline(blip_down_file, blip_up_file):
     corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_path, \
                                                                     extract_file_name(corrected_4D_file))
     
-    report = make_comparison_report(output_path, corrected_4D_file_postp)
+    report = evaluate_topup_performance(output_path, \
+                                        blip_down_file_first_temp_window_moved, \
+                                        blip_up_file_first_temp_window_moved, \
+                                        corrected_4D_file_postp)
 
     topup_pipeline.q.put(report)
     #"""
