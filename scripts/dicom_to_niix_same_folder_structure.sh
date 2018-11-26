@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RUN
-# dicom_to_niix_same_folder_structure.sh 2>&1 | tee Baseline\ nii\ conversion\ report\ 3D.txt
+# dicom_to_niix_same_folder_structure.sh <dicom_root_folder> <nifti_output_folder> <directory_keyword> 2>&1 | tee Baseline\ nii\ conversion\ report\ 3D.txt
 
 # Converts .dcm files in all subfolders of dicom_root_folder 
 # with file name containing directory_keyword to .nii files .
@@ -15,7 +15,7 @@
 # This script was used on Philips DICOM data. 
 
 # Author: Ivar Thokle Hovden
-# Last modified: 2018-11-06
+# Last modified: 2018-11-26
 
 # dcm2niix version used: 1.0.20180622
 
@@ -96,14 +96,16 @@
 # ROI statistics of the corresponding NiFTI image in NordicICE. Only marginal (rounding error)
 # differences were observed for the min and max values (0.1 error). ROI histograms identical by eye.
 
-dicom_root_folder="../DICOM"
-nifti_output_folder="../../../../../../../home/ivar/Documents/data_local/IVS\ EPI\ Baseline\ Local/NIFTI_3D"
+#dicom_root_folder="../DICOM"
+dicom_root_folder=$1
+#nifti_output_folder="../../../../../../../home/ivar/Documents/data_local/IVS\ EPI\ Baseline\ Local/NIFTI_3D"
+nifti_output_folder=$2
 
 # Select only subfolders inside dicom_root_folder
 # containing following keyword/string.
-directory_keyword=3d
+directory_keyword=$3
 
-delete_pre_existing_destination_files=true
+delete_pre_existing_destination_folders=false
 
 # Create empty array to fill inn matched dicom folders w. filepath
 # that contain .dcm files to be converted to .nii files (input directories).
@@ -112,7 +114,7 @@ directories_to_convert_array=()
 # Store input directories to bash array directories_to_convert_array
 while IFS=  read -r -d $'\0'; do
     directories_to_convert_array+=("$REPLY")
-done < <(find $dicom_root_folder -type d -iname *$directory_keyword* -print0)
+done < <(find $dicom_root_folder -type d -iname "*$directory_keyword*" -print0)
 
 # Iterate over input directories
 for i in "${!directories_to_convert_array[@]}"; do
@@ -130,15 +132,15 @@ for i in "${!directories_to_convert_array[@]}"; do
     if [ -d "$output_folder" ]; then
         echo "output folder $i already exists"
 
-        if [ ! $delete_pre_existing_destination_files = true ]; then
-            echo "delete_pre_existing_destination_files is set to false"
+        if [ ! $delete_pre_existing_destination_folders = true ]; then
+            echo "delete_pre_existing_destination_folders is set to false"
             echo "not deleting pre-existing files"
             echo "assuming already converted files"
             echo "skipping conversion"
             continue
         fi
         
-        echo "delete_pre_existing_destination_files is set to true"
+        echo "delete_pre_existing_destination_folders is set to true"
         echo "deleting pre-existing output folder"
         rm -rd "$output_folder"        
     fi  
@@ -148,7 +150,7 @@ for i in "${!directories_to_convert_array[@]}"; do
 
     # Here is the dcm2niix command
     #command="dcm2nii -4 y -d y -e y -g n -m n -n y -o '$output_folder' -p y -r y -v y '$input_folder'"
-    command="/home/ivar/mricrogl_lx/dcm2niix -o '$output_folder' -z n '$input_folder'"
+    command="/home/ivar/mricrogl_lx/dcm2niix -f %t_%p_%s -o '$output_folder' -z n '$input_folder'"
 
     echo "converting DICOM files in input folder number $i to NIFTI files in output folder number $i with the command:"
 

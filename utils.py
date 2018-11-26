@@ -9,9 +9,10 @@ Created on Mon Nov  5 13:27:16 2018
 import os
 import sys
 from time import sleep
-from fsl import topup_compute
 from nipype.interfaces.nipy.utils import Similarity
-from fsl import extract_first_temporary_window_and_save, \
+from execute import run_shell_command
+from fsl import topup_compute, \
+    extract_first_temporary_window_and_save, \
     merge_blip_down_blip_up_first_temporary_window, \
     add_duplicate_slices, \
     split_along_temporary_axis_and_save, \
@@ -465,3 +466,39 @@ def report_listener(q, TOPUP_folder_name):
         f.write(str(m) + '\n')
         f.flush()
     f.close()
+
+def dcm2niix_script_wrapper(dicom_root_folder, \
+                            nifti_output_folder, \
+                            directory_keyword, \
+                            log_file):
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    command = 'bash scripts/dicom_to_niix_same_folder_structure.sh' + \
+                ' "' + dicom_root_folder + '"' + \
+                ' "' + nifti_output_folder + '"' + \
+                ' "' + directory_keyword + '" 2>&1 | tee' + \
+                ' "' + log_file + '"'
+    
+    run_shell_command(command)
+
+    print(process_msg_prefix + "dcm2niix_script_wrapper: Given not already existing " + \
+                  "converted files, successfully converted " + \
+                  ".dcm files in " + dicom_root_folder + \
+                  " having folder name including keyword (after taking lowercase) " + \
+                  directory_keyword + \
+                  " to " +  nifti_output_folder + \
+                  " using scripts/dicom_to_niix_same_folder_structure.sh in subprocess shell call." + \
+                  " log file: " + log_file)
+
+def dcm2niix_pipeline(DICOM_folder_name, \
+                      NIFTI_folder_name, \
+                      keyword):
+    
+    conversion_log_file = NIFTI_folder_name + \
+    "/DICOM to NIFTI conversion report with keyword " + \
+    keyword + ".txt"
+    
+    dcm2niix_script_wrapper(DICOM_folder_name, \
+                            NIFTI_folder_name, \
+                            keyword, \
+                            conversion_log_file)
