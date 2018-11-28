@@ -316,8 +316,8 @@ def find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_direct
     
     
     corresponding_matched_flair_3d_directory_if_exists = \
-                                FLAIR_3D_NIFTI_folder_name + "/" + \
-                                output_directory[len(TOPUP_folder_name)+1:-len(output_folder)]
+                                FLAIR_3D_NIFTI_folder_name + \
+                                output_directory[len(TOPUP_folder_name):-len(output_folder)]
     
     directoryTree = \
     [tuple3 for tuple3 in os.walk(corresponding_matched_flair_3d_directory_if_exists)]
