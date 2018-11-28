@@ -19,7 +19,7 @@ directory of the epi_corrections GitHub repository
 Then the program is run and its stdout and sterr log 
 is saved to a file in the epi_corrections_out directory.
 
-The input folder to the program is DICOM_folder_name,
+The input folder to the program is DICOM_directory,
 which is also one directory up from the GitHub repository location.
 
 Running the pipeline in this way enshures that both stdout and strerr
@@ -47,45 +47,45 @@ def main():
 
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_folder_name = "../DICOM_automation_TEST"
+    DICOM_directory = "../DICOM_automation_TEST"
     
     # Output folder. This program shall not output
     # or modify data in any other directory except
     # in this folder.
-    corrections_base_folder = "../epi_corrections_out"
+    corrections_base_directory = "../epi_corrections_out"
 
     # Folder for EPI NIFTI pairs converted by
     # dcm2niix script (the script's output directory)
-    # from .dcm files in DICOM_folder_name
-    EPI_NIFTI_folder_name = corrections_base_folder + "/EPI"
+    # from .dcm files in DICOM_directory
+    EPI_NIFTI_directory = corrections_base_directory + "/EPI"
     
     # Folder for FLAIR 3D NIFTI converted by
     # dcm2niix script (the script's output directory)
-    # from .dcm files in DICOM_folder_name
-    FLAIR_3D_NIFTI_folder_name = corrections_base_folder + "/FLAIR_3D"
+    # from .dcm files in DICOM_directory
+    FLAIR_3D_NIFTI_directory = corrections_base_directory + "/FLAIR_3D"
 
     # Output directory for FSL topup pipeline
-    TOPUP_folder_name = corrections_base_folder + "/TOPUP"
+    TOPUP_directory = corrections_base_directory + "/TOPUP"
 
     # 
     # using script/dicom_to_niix_same_folder_structure.sh
     
     # Convert EPI data using the keyword epi
-    create_directory_if_not_exists(EPI_NIFTI_folder_name)
+    create_directory_if_not_exists(EPI_NIFTI_directory)
     
-    dcm2niix_pipeline(DICOM_folder_name, \
-                      EPI_NIFTI_folder_name, \
+    dcm2niix_pipeline(DICOM_directory, \
+                      EPI_NIFTI_directory, \
                       "epi")
     # Convert FLAIR 3D data using the beyword "flair 3d"
-    create_directory_if_not_exists(FLAIR_3D_NIFTI_folder_name)
-    dcm2niix_pipeline(DICOM_folder_name, \
-                      FLAIR_3D_NIFTI_folder_name, \
+    create_directory_if_not_exists(FLAIR_3D_NIFTI_directory)
+    dcm2niix_pipeline(DICOM_directory, \
+                      FLAIR_3D_NIFTI_directory, \
                       "flair 3d")
 
     #"""
-    # Detect EPI pairs in EPI_NIFTI_folder_name
-    #GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_folder_name)
-    GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_folder_name)
+    # Detect EPI pairs in EPI_NIFTI_directory
+    #GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_directory)
+    GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_directory)
     
     print_detected_data(GE_blip_nii_pairs, SE_blip_nii_pairs)
     
@@ -100,10 +100,12 @@ def main():
     q = manager.Queue()
     
     # Multiprocessing pool of 8 workers (= number of physical CPU cores)
-    p = mp.Pool(8, topup_pipeline_init, initargs=(q, EPI_NIFTI_folder_name, TOPUP_folder_name), maxtasksperchild=1)
+    p = mp.Pool(8, topup_pipeline_init, \
+                initargs=(q, EPI_NIFTI_directory, FLAIR_3D_NIFTI_directory, TOPUP_directory), \
+                maxtasksperchild=1)
     
     # Put report listener to work first
-    p.apply_async(report_listener, args=(q, TOPUP_folder_name))
+    p.apply_async(report_listener, args=(q, TOPUP_directory))
     
     # Run topup pipeline on chunks of EPI pairs concurrently,
     # working on GE pairs first.

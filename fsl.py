@@ -11,7 +11,7 @@ from execute import run_shell_command
 
 # Splitting NIFTI files along time axis and moving to destination for correction
 
-def extract_first_temporary_window_and_save(output_path, \
+def extract_first_temporary_window_and_save(output_directory, \
                                               blip_file, \
                                               blip_file_name):
     # blip_file is the relative path from script root + file name
@@ -19,7 +19,7 @@ def extract_first_temporary_window_and_save(output_path, \
     
     process_msg_prefix = "PID %i: " % os.getpid()
     
-    output_base_name = output_path + "/" + blip_file_name[:-len(".nii")] + "_"
+    output_base_name = output_directory + "/" + blip_file_name[:-len(".nii")] + "_"
     
     pre_command = 'FSLOUTPUTTYPE=NIFTI'
     command = 'fslroi ' + '"' + blip_file + '"' + ' ' + '"' + \
@@ -31,10 +31,10 @@ def extract_first_temporary_window_and_save(output_path, \
     print(process_msg_prefix + "extract_first_temporary_window_and_save: Successfully extracted " + \
                   " first temporary window of " + \
                   blip_file + " into directory " + \
-                  output_path + \
+                  output_directory + \
                   " using fslroi in subprocess shell call")
 
-def split_along_temporary_axis_and_save(output_path, \
+def split_along_temporary_axis_and_save(output_directory, \
                                               blip_file, \
                                               blip_file_name):
     # blip_file is the relative path from script root + file name
@@ -42,7 +42,7 @@ def split_along_temporary_axis_and_save(output_path, \
     
     process_msg_prefix = "PID %i: " % os.getpid()
     
-    output_base_name = output_path + "/" + blip_file_name[:-len(".nii")] + "_"
+    output_base_name = output_directory + "/" + blip_file_name[:-len(".nii")] + "_"
         
     pre_command = 'FSLOUTPUTTYPE=NIFTI'
     command = 'fslsplit ' + '"' + blip_file + '"' + ' ' + '"' + \
@@ -52,7 +52,7 @@ def split_along_temporary_axis_and_save(output_path, \
     run_shell_command(full_command)
         
     print(process_msg_prefix + "extract_first_temporary_window_and_save: Successfully split " + \
-                  blip_file + " into directory " + output_path + \
+                  blip_file + " into directory " + output_directory + \
                  " using fslsplit in subprocess shell call")
 
 def merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file, \
@@ -66,7 +66,7 @@ def merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_w
     
     # Assuming that corresponding data
     # for both blip directions already
-    # exist in output_path
+    # exist in output_directory
     
     process_msg_prefix = "PID %i: " % os.getpid()
     
@@ -113,7 +113,7 @@ def topup_compute(merged_image_for_topup_compute_file, \
     
     return iout_name + ".nii"
 
-def add_duplicate_slices(output_path, file_name):
+def add_duplicate_slices(output_directory, file_name):
     
     process_msg_prefix = "PID %i: " % os.getpid()
 
@@ -121,9 +121,9 @@ def add_duplicate_slices(output_path, file_name):
     output_zmin = output_base + '_zmin'
     output_zmax = output_base + '_zmax'
     output_prep = output_base + '_prep_topup'
-    output_prep_file = output_path + "/" + output_prep + ".nii"
+    output_prep_file = output_directory + "/" + output_prep + ".nii"
     
-    pre_command = 'cd ' + '"' + output_path + '"' + \
+    pre_command = 'cd ' + '"' + output_directory + '"' + \
                     ' && FSLOUTPUTTYPE=NIFTI && xdim=$(fslval ' + \
                     '"' + file_name + '"' + ' dim1) && ydim=$(fslval ' + \
                     '"' + file_name + '"' + ' dim2) && zdim=$(fslval ' + \
@@ -156,22 +156,22 @@ def add_duplicate_slices(output_path, file_name):
     
     print(process_msg_prefix + "Successfully merged " + \
               "duplicate zmin and zmax slices to " + \
-              output_path + "/" + file_name + \
+              output_directory + "/" + file_name + \
               ", thereby creating " + \
               output_prep_file + \
               " for FSL topup")
     
     return output_prep_file
 
-def remove_first_and_last_slices_and_save(output_path, file_name):
+def remove_first_and_last_slices_and_save(output_directory, file_name):
     
     process_msg_prefix = "PID %i: " % os.getpid()
 
     output_base = file_name[:-len(".nii")]
     output_file_name = output_base + '_postp'
-    output_file = output_path + "/" + output_file_name + ".nii"
+    output_file = output_directory + "/" + output_file_name + ".nii"
     
-    pre_command = 'cd ' + '"' + output_path + '"' + \
+    pre_command = 'cd ' + '"' + output_directory + '"' + \
                     ' && FSLOUTPUTTYPE=NIFTI && xdim=$(fslval ' + \
                     '"' + file_name + '"' + ' dim1) && ydim=$(fslval ' + \
                     '"' + file_name + '"' + ' dim2) && zdim=$(fslval ' + \
@@ -191,7 +191,7 @@ def remove_first_and_last_slices_and_save(output_path, file_name):
     
     print(process_msg_prefix + "Successfully removed " + \
               "first and last z slice from" + \
-              output_path + "/" + file_name + \
+              output_directory + "/" + file_name + \
               ", and saved to" + \
               output_file)
     
