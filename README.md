@@ -7,9 +7,13 @@ For a correction of a pair of EPI images (blip-up, blip-down), the different typ
 
 The off-resonance field is then used to "unwrap" each EPI image in the pair, aiming the two to be identical.
 
-Dependencies: [TODO]
-FSL
-EPIC
+Dependencies (might work with other versions too):
+
+FSL 6.0.0 : For topup and various tools used
+EPIC (TODO included in the folder epic)
+freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register
+nipype : for similarity metrics
+dcm2niiX version v1.0.20180622 GCC4.9.2 (64-bit Linux) (included under scripts along with wrapper script) : For DICOM (.dcm) to NIFTI (.nii) file conversion
 
 References:
 

@@ -342,7 +342,11 @@ def find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_direct
         return "not found"
     
     # This way of extracting file name is experimental.
-    flair_3d_file_name = [l[2] for l in directoryTree][-1][0]
+    #flair_3d_file_name = [l[2] for l in directoryTree][-1][0]
+    # Assumes that there is only one .nii file in the mathing 
+    # flair 3d directory so that the file found with this 
+    # command with file extension .nii is the flair 3d .nii file.
+    flair_3d_file_name = [file for file in [l[2] for l in directoryTree][-1] if ".nii" in file][0]
 
     if not "flair" in flair_3d_file_name.lower():
         # The detected file name  does not have
