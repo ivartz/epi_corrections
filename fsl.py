@@ -111,7 +111,33 @@ def topup_compute(merged_image_for_topup_compute_file, \
               merged_image_for_topup_compute_file + " into " + \
               iout_name)
     
-    return iout_name + ".nii"
+    return iout_name + ".nii", out_name
+
+def topup_apply(prepared_4D_file, datain, topup_out_base_name_file):
+    
+    process_msg_prefix = "PID %i: " % os.getpid()
+    
+    output_base_name = prepared_4D_file[:-len(".nii")]
+    
+    out_name = output_base_name + "_applytopup"
+    
+    pre_command = 'FSLOUTPUTTYPE=NIFTI'
+    
+    command = 'applytopup --imain=' + '"' + prepared_4D_file[:-len(".nii")] + \
+        '"' + ' ' + '--inindex=2'  + \
+        ' ' + '--datain='  + '"' + datain + \
+        '"' + ' ' + '--topup=' + '"' + topup_out_base_name_file + \
+        '"' + ' ' + '--out='  + '"' + out_name + '" --method=jac'
+    
+    full_command = pre_command + ' && ' + command
+    
+    run_shell_command(full_command)
+
+    print(process_msg_prefix + "Successfully ran applytopup on " + \
+              prepared_4D_file + " based on topup output" + \
+              topup_out_base_name_file + "*")
+    
+    return out_name + ".nii"
 
 def add_duplicate_slices(output_directory, file_name):
     

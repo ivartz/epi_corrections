@@ -69,7 +69,12 @@ def main():
 
     # Output directory for FSL topup pipeline
     TOPUP_directory = corrections_base_directory + "/TOPUP"
-
+    
+    # Directory for final FSL topup corrected EPIs 
+    # (positive phase encoded, blip up).
+    EPI_NIFTI_applytopup_directory = corrections_base_directory + "/EPI_applytopup"
+    create_directory_if_not_exists(EPI_NIFTI_applytopup_directory)
+    
     # 
     # using script/dicom_to_niix_same_folder_structure.sh
     
@@ -104,7 +109,10 @@ def main():
     
     # Multiprocessing pool of 8 workers (= number of physical CPU cores)
     p = mp.Pool(8, topup_pipeline_init, \
-                initargs=(q, EPI_NIFTI_directory, FLAIR_3D_NIFTI_directory, TOPUP_directory), \
+                initargs=(q, EPI_NIFTI_directory, \
+                          FLAIR_3D_NIFTI_directory, \
+                          TOPUP_directory, \
+                          EPI_NIFTI_applytopup_directory), \
                 maxtasksperchild=1)
     
     # Put report listener to work first

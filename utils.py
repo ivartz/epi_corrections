@@ -17,7 +17,8 @@ from fsl import topup_compute, \
     add_duplicate_slices, \
     split_along_temporary_axis_and_save, \
     remove_first_and_last_slices_and_save, \
-    copy_header
+    copy_header, \
+    topup_apply
 from registration import highres_to_lowres_registration
 
 def remove_substring_after_last_slash(string_with_slashes):
@@ -662,6 +663,90 @@ def print_detected_data(GE_pairs, SE_pairs):
         print(s[0])
         print(s[1])
 
+def copy_file(source_file, destination_file):
+    # source_file and destination_file 
+    # need to be file path + file name
+    command = 'cp -v "' + \
+                source_file + \
+                '" "' + \
+                destination_file + \
+                '"'
+    run_shell_command(command)
+
+def topup_apply_pipeline(blip_up_file, \
+                topup_out_base_name_file, \
+                topup_datain, \
+                TOPUP_working_directory, \
+                EPI_NIFTI_directory, \
+                EPI_NIFTI_applytopup_directory):
+    
+    # As is now, this function must be called within
+    # the topup_pipeline function.
+    
+    blip_up_file_name = extract_string_after_last_backslash(blip_up_file)
+    
+    # Determine the file path + file name for the 
+    # copy destination of blip_up_file .
+    # Original file name kept.
+    blip_up_file_copied = TOPUP_working_directory + "/" + \
+                            blip_up_file_name
+    
+    # Copy blip_up_file to the corresponding 
+    # TOPUP directory folder.
+    copy_file(blip_up_file, blip_up_file_copied)
+    
+    # Add top and bottom duplicate slices
+    # along z axis on the entire copied file 
+    # (all temoprary windows get added 
+    # top and bottom duplicate slice).
+    # blip_up_file_copied_prep_topup is the 4D file containing 
+    # all temporary volumes that applytopup is going to run on
+    # together with topup_out_base_name_file
+    # The command generates files that are saved in the working directory.
+    blip_up_file_copied_prep_topup = add_duplicate_slices(TOPUP_working_directory, \
+                                                         blip_up_file_name)
+    
+    # Run applytopup
+    blip_up_applytopup_file = \
+                                topup_apply(blip_up_file_copied_prep_topup, \
+                                            topup_datain, \
+                                            topup_out_base_name_file)
+    
+    # Determine the final output directory for
+    # saving the the applytopup .nii output file.
+    # The string operations indexes away at both start and end of 
+    # the blip_up_file string.
+    output_directory = EPI_NIFTI_applytopup_directory + \
+                    blip_up_file[len(EPI_NIFTI_directory):-len(blip_up_file_name)-1]
+    
+    # Directory needs to exist from here.
+    create_directory_if_not_exists(output_directory)
+
+    # Remove empty top and bottom z slices of blip_up_applytopup_file ,
+    # which is a side effect of topup and applytopup. 
+    blip_up_applytopup_postp_file = \
+    remove_first_and_last_slices_and_save(TOPUP_working_directory, \
+                                          extract_string_after_last_backslash(blip_up_applytopup_file))
+    
+    # Replace the header of blip_up_applytopup_postp_file
+    # with the original header (blip_up_file). This modifies
+    # the same file; blip_up_applytopup_postp_file 
+    # (does not create a new file).
+    copy_header(blip_up_file, blip_up_applytopup_postp_file)
+    
+    # Determine final file name and location.
+    blip_up_applytopup_postp_file_name = \
+            extract_string_after_last_backslash(blip_up_applytopup_postp_file)
+    blip_up_applytopup_postp_file_copied = output_directory + "/" + \
+            blip_up_applytopup_postp_file_name        
+    
+    # Finally, the blip_up_applytopup_postp_file
+    # is copied to output_directory; file path + file name:
+    # blip_up_applytopup_postp_file_copied ,
+    # (same file name as in TOPUP_working_directory).
+    copy_file(blip_up_applytopup_postp_file, blip_up_applytopup_postp_file_copied)
+
+
 def topup_pipeline(blip_down_file, blip_up_file):
 
     blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
@@ -698,10 +783,17 @@ def topup_pipeline(blip_down_file, blip_up_file):
     
     # Finally, compute the off-resonance field and correct the EPI pair in
     # merged_image_for_topup_compute according to this field
-    corrected_4D_file = topup_compute(merged_image_for_topup_compute_file, \
-                                      topup_datain, \
-                                      topup_config)
-    
+    corrected_4D_file, topup_out_base_name_file = \
+                                    topup_compute(merged_image_for_topup_compute_file, \
+                                                  topup_datain, \
+                                                  topup_config)
+                                    
+    # Even though topup_compute removes the data for first and
+    # last z slice, it doesn't remove the slices. 
+    # They remain empty (black), and this is problematic for 
+    # further analysis such as coregistration.
+    # This command removes the first and last slices in z direction
+    # completely.
     corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_directory, \
                                                                     extract_string_after_last_backslash(corrected_4D_file))
     
@@ -715,13 +807,25 @@ def topup_pipeline(blip_down_file, blip_up_file):
     topup_pipeline.q.put(report)
     #"""
     
+    # Lastly, run applytopup using topup_out_base_name_file
+    # on all temporary windows (DSC-MRI with contrast bolus)
+    # of positive phase encoded EPIs (blip up).
+    topup_apply_pipeline(blip_up_file, \
+                topup_out_base_name_file, \
+                topup_datain, \
+                output_directory, \
+                topup_pipeline.EPI_NIFTI_folder_name, \
+                topup_pipeline.EPI_NIFTI_applytopup_directory)
+    
 def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
                         FLAIR_3D_NIFTI_folder_name,\
-                        TOPUP_folder_name):
+                        TOPUP_folder_name, \
+                        EPI_NIFTI_applytopup_directory):
     topup_pipeline.q = q
     topup_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
     topup_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
     topup_pipeline.TOPUP_folder_name = TOPUP_folder_name
+    topup_pipeline.EPI_NIFTI_applytopup_directory = EPI_NIFTI_applytopup_directory
 
 def listen_to_queue_and_write_to_file(q, report_file):
     # This operation report_file
