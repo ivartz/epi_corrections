@@ -47,7 +47,7 @@ def main():
 
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_automation_TEST"
+    DICOM_directory = "../DICOM"
     
     # Output folder. This program shall not output
     # or modify data in any other directory except
@@ -55,7 +55,7 @@ def main():
     # (from mri_robust_register failure)
     # has been observed in the epi_corrections
     # repository folder.
-    corrections_base_directory = "../epi_corrections_out"
+    corrections_base_directory = "../epi_corrections_out_2019_01_04"
 
     # Folder for EPI NIFTI pairs converted by
     # dcm2niix script (the script's output directory)

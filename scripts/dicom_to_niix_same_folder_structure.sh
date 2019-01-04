@@ -150,7 +150,7 @@ for i in "${!directories_to_convert_array[@]}"; do
 
     # Here is the dcm2niix command
     #command="dcm2nii -4 y -d y -e y -g n -m n -n y -o '$output_folder' -p y -r y -v y '$input_folder'"
-    command="scripts/dcm2niix -f %t_%p_%s -o '$output_folder' -z n '$input_folder'"
+    command="scripts/dcm2niix_ogeier -f %t_%p_%s -o '$output_folder' -z n '$input_folder'"
 
     echo "converting DICOM files in input folder number $i to NIFTI files in output folder number $i with the command:"
 
