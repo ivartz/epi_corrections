@@ -20,6 +20,10 @@ from fsl import topup_compute, \
     copy_header, \
     topup_apply
 from registration import highres_to_lowres_registration
+from epic import convert_nii_to_mgz, \
+    convert_mgz_to_nii, \
+    epic_compute, \
+    epic_apply_forward
 
 def remove_substring_after_last_slash(string_with_slashes):
     # Index for last "/" in string_with_slashes
@@ -155,7 +159,7 @@ def determine_merged_blips_file_name_topup(blip_down_file_name, \
     
     return merged_blips_file_name
 
-def determine_blip_file_name_for_window_topup(blip_direction , \
+def determine_blip_file_name_for_window(blip_direction , \
                                         blip_down_file_name, \
                                         blip_up_file_name, \
                                         temporary_window_number="0000"):
@@ -173,7 +177,7 @@ def determine_blip_file_name_for_window_topup(blip_direction , \
         temporary_window_number + ".nii"
     
     else:
-        print(process_msg_prefix + " Error: determine_blip_file_name_for_window_topup: \
+        print(process_msg_prefix + " Error: determine_blip_file_name_for_window: \
         the argument blip_direction is not correctly set")
         sys.exit(1)
 
@@ -208,9 +212,10 @@ def determine_output_directory(root_folder_name, \
         
     return output_directory
 
-def split_and_merge_first_temporary_for_topup(output_directory, \
+def split_and_or_merge_first_temporary_window(output_directory, \
                                     blip_down_file, \
-                                    blip_up_file):
+                                    blip_up_file, \
+                                    correction_method="topup"):
     
     # Splitting part
     blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
@@ -225,7 +230,7 @@ def split_and_merge_first_temporary_for_topup(output_directory, \
                                               blip_up_file_name)
             
     blip_down_temporary_window_file_name = \
-        determine_blip_file_name_for_window_topup("blip_down", \
+        determine_blip_file_name_for_window("blip_down", \
                                             blip_down_file_name, \
                                             blip_up_file_name)
     
@@ -236,7 +241,7 @@ def split_and_merge_first_temporary_for_topup(output_directory, \
           blip_down_temporary_window_file)
     
     blip_up_temporary_window_file_name = \
-        determine_blip_file_name_for_window_topup("blip_up", \
+        determine_blip_file_name_for_window("blip_up", \
                                             blip_down_file_name, \
                                             blip_up_file_name)
     
@@ -246,79 +251,86 @@ def split_and_merge_first_temporary_for_topup(output_directory, \
     print("blip_up_temporary_window_file: %s" % \
           blip_up_temporary_window_file)
 
-    # FSL topup specific operations: add dulicate top and bottom slice
-    # along z-axis, since the topup algorithm will remove top and bottom slice.
-    blip_down_temporary_window_file_prep = add_duplicate_slices(output_directory, blip_down_temporary_window_file_name)
-    blip_up_temporary_window_file_prep = add_duplicate_slices(output_directory, blip_up_temporary_window_file_name)
+    if correction_method == "topup":
+        # FSL topup specific operations: add dulicate top and bottom slice
+        # along z-axis, since the topup algorithm will remove top and bottom slice.
+        blip_down_temporary_window_file_prep = add_duplicate_slices(output_directory, blip_down_temporary_window_file_name)
+        blip_up_temporary_window_file_prep = add_duplicate_slices(output_directory, blip_up_temporary_window_file_name)
     
     
-    # Merging part
-    
-    # determine file name for merged file that is prepated for topup
-    # prepared means that the file has added duplicate zmin and zmax slices
-    blip_down_blip_up_temporary_window_file_name = \
-        determine_merged_blips_file_name_topup(blip_down_file_name, \
-                                         blip_up_file_name)
-
-    # determine file name for merged file that is not prepared
-    # for topup. 
-    # not prepated means that the file shall not have duplicate
-    # slices added, and that it is a direct merge.
-    # The point for having this is for later easier coregistration.
-    # Coregistration for measure of correctness of FSL topup 
-    # distortion correction.
-    blip_down_blip_up_temporary_window_file_name_raw = \
-        determine_merged_blips_file_name_topup(blip_down_file_name, \
-                                         blip_up_file_name, \
-                                         prep=False)
-
+        # Merging part
         
-    print("blip_down_blip_up_temporary_window_file_name: %s" % \
-          blip_down_blip_up_temporary_window_file_name)
+        # determine file name for merged file that is prepated for topup
+        # prepared means that the file has added duplicate zmin and zmax slices
+        blip_down_blip_up_temporary_window_file_name = \
+            determine_merged_blips_file_name_topup(blip_down_file_name, \
+                                             blip_up_file_name)
     
-    # prepend relative path to make blip_down_blip_up_temporary_window_file
-    blip_down_blip_up_temporary_window_file = output_directory + "/" + \
-        blip_down_blip_up_temporary_window_file_name
+        # determine file name for merged file that is not prepared
+        # for topup. 
+        # not prepated means that the file shall not have duplicate
+        # slices added, and that it is a direct merge.
+        # The point for having this is for later easier coregistration.
+        # Coregistration for measure of correctness of FSL topup 
+        # distortion correction.
+        blip_down_blip_up_temporary_window_file_name_raw = \
+            determine_merged_blips_file_name_topup(blip_down_file_name, \
+                                             blip_up_file_name, \
+                                             prep=False)
     
-    # prepend relative path to make blip_down_blip_up_temporary_window_file_raw
-    blip_down_blip_up_temporary_window_file_raw = output_directory + "/" + \
-        blip_down_blip_up_temporary_window_file_name_raw
+        print("blip_down_blip_up_temporary_window_file_name: %s" % \
+              blip_down_blip_up_temporary_window_file_name)
     
-    print("blip_down_blip_up_temporary_window_file: %s" % \
-          blip_down_blip_up_temporary_window_file)    
+        # prepend relative path to make blip_down_blip_up_temporary_window_file
+        blip_down_blip_up_temporary_window_file = output_directory + "/" + \
+            blip_down_blip_up_temporary_window_file_name
     
-    # merge together the volumes with added duplicate slices
-    merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file, \
-                                                      blip_down_temporary_window_file_prep, \
-                                                      blip_up_temporary_window_file_prep)
-    # merge together the volumes with no added duplicate slices
-    # for later ease of performance comparison
-    merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file_raw, \
-                                                      blip_down_temporary_window_file, \
-                                                      blip_up_temporary_window_file)
+        # prepend relative path to make blip_down_blip_up_temporary_window_file_raw
+        blip_down_blip_up_temporary_window_file_raw = output_directory + "/" + \
+            blip_down_blip_up_temporary_window_file_name_raw
+        
+        print("blip_down_blip_up_temporary_window_file: %s" % \
+              blip_down_blip_up_temporary_window_file)    
+        
+        # merge together the volumes with added duplicate slices
+        merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file, \
+                                                          blip_down_temporary_window_file_prep, \
+                                                          blip_up_temporary_window_file_prep)
+        # merge together the volumes with no added duplicate slices
+        # for later ease of performance comparison
+        merge_blip_down_blip_up_first_temporary_window(blip_down_blip_up_temporary_window_file_raw, \
+                                                          blip_down_temporary_window_file, \
+                                                          blip_up_temporary_window_file)
+    
+        return blip_down_blip_up_temporary_window_file, \
+                blip_down_blip_up_temporary_window_file_raw, \
+                blip_down_temporary_window_file, \
+                blip_up_temporary_window_file
 
-    return blip_down_blip_up_temporary_window_file, \
-            blip_down_blip_up_temporary_window_file_raw, \
-            blip_down_temporary_window_file, \
-            blip_up_temporary_window_file
+    elif correction_method == "epic":
+        return blip_down_temporary_window_file, \
+                blip_up_temporary_window_file
+    else:
+        print("PID %i: split_and_or_merge_first_temporary_window: Error, correction_method \
+        not correctly set, exiting with sys.exit()" % os.getpid())
+        sys.exit(1)
 
 
-#def evaluate_topup_performance_init(q):
-#    evaluate_topup_performance.q = q
+
+#def compute_similarities_init(q):
+#    compute_similarities.q = q
 
 def find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory, \
-                            TOPUP_folder_name, \
+                            TOPUP_or_EPIC_folder_name, \
                             FLAIR_3D_NIFTI_folder_name):
     # Find corresponding (already converted to NIFTI)
     # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
     # if it exists. Return "not found" elsewise.
     output_folder = extract_string_after_last_backslash(output_directory)
     
-    
-    
     corresponding_matched_flair_3d_directory_if_exists = \
                                 FLAIR_3D_NIFTI_folder_name + \
-                                output_directory[len(TOPUP_folder_name):-len(output_folder)]
+                                output_directory[len(TOPUP_or_EPIC_folder_name):-len(output_folder)]
     
     directoryTree = \
     [tuple3 for tuple3 in os.walk(corresponding_matched_flair_3d_directory_if_exists)]
@@ -334,7 +346,6 @@ def find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_direct
     
     # This way of extracting folder name is experimental.
     flair_3d_folder = [l[1] for l in directoryTree][0][0]
-    
     if not "flair" in flair_3d_folder.lower():
         # The detected folder does not have
         # flair in the lower case version
@@ -348,7 +359,6 @@ def find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_direct
     # flair 3d directory so that the file found with this 
     # command with file extension .nii is the flair 3d .nii file.
     flair_3d_file_name = [file for file in [l[2] for l in directoryTree][-1] if ".nii" in file][0]
-
     if not "flair" in flair_3d_file_name.lower():
         # The detected file name  does not have
         # flair in the lower case version
@@ -409,12 +419,13 @@ def calculate_volume_similarity_measures(volume_1, \
     
     return header, report
 
-def evaluate_topup_performance(output_directory, \
+def compute_similarities(output_directory, \
                                blip_down_window_file, \
                                blip_up_window_file, \
                                corrected_4D_file, \
-                               TOPUP_folder_name, \
-                               FLAIR_3D_NIFTI_folder_name):
+                               TOPUP_or_EPIC_folder_name, \
+                               FLAIR_3D_NIFTI_folder_name, \
+                               correction_method="topup"):
     
     # Source:
     # https://nipype.readthedocs.io/en/latest/interfaces/generated/interfaces.nipy/utils.html
@@ -434,33 +445,45 @@ def evaluate_topup_performance(output_directory, \
     corrected_blip_up_file = corrected_4D_file[:-len(".nii")] + "_0001.nii"
     corrected_blip_up_file_name = extract_string_after_last_backslash(corrected_blip_up_file)
     
-    # FSL topup fix: since duplicate slices were added to the 
-    # uncorrected 4D file that was used with topup, 
-    # corrected_4D_file remains shifted one slice upwards 
-    # even with these slices removed by the topup algorithm.
-    # 
-    # A solution to shifting the corrected data back to original 
-    # position along z axims seems to be to replace the 
-    # geometrical header information of the corrected blip down
-    # and blip up .nii files with the geometrical header
-    # information of the original uncorrected .nii files:
-    #
-    # Replace geometry info in header of corrected_blip_down_file
-    # and corrected_blip_up_file with geometry info in header
-    # of blip_down_window_file and blip_up_window_file respectively 
-    # (non-corrected temporary window files)
-    # The header geometrical information of
-    # corrected_blip_down_file amd corrected_blip_up_file
-    # is changed after running the two following commands.
-    copy_header(blip_down_window_file, corrected_blip_down_file)
-    copy_header(blip_up_window_file, corrected_blip_up_file)
-    
-    # Find corresponding (already converted to NIFTI)
-    # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
-    # if it exists. Return "not found" elsewise.
-    flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory, \
-                                                                                   TOPUP_folder_name, \
-                                                                                   FLAIR_3D_NIFTI_folder_name)
+    if correction_method == "topup":
+        # FSL topup fix: since duplicate slices were added to the 
+        # uncorrected 4D file that was used with topup, 
+        # corrected_4D_file remains shifted one slice upwards 
+        # even with these slices removed by the topup algorithm.
+        # 
+        # A solution to shifting the corrected data back to original 
+        # position along z axims seems to be to replace the 
+        # geometrical header information of the corrected blip down
+        # and blip up .nii files with the geometrical header
+        # information of the original uncorrected .nii files:
+        #
+        # Replace geometry info in header of corrected_blip_down_file
+        # and corrected_blip_up_file with geometry info in header
+        # of blip_down_window_file and blip_up_window_file respectively 
+        # (non-corrected temporary window files)
+        # The header geometrical information of
+        # corrected_blip_down_file amd corrected_blip_up_file
+        # is changed after running the two following commands.
+        copy_header(blip_down_window_file, corrected_blip_down_file)
+        copy_header(blip_up_window_file, corrected_blip_up_file)
+        
+        # Find corresponding (already converted to NIFTI)
+        # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
+        # if it exists. Return "not found" elsewise.
+        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory, \
+                                                                                       TOPUP_or_EPIC_folder_name, \
+                                                                                       FLAIR_3D_NIFTI_folder_name)
+    elif correction_method == "epic":
+        # Find corresponding (already converted to NIFTI)
+        # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
+        # if it exists. Return "not found" elsewise.
+        # EPIC-specific
+        # TAKE AWAY /e1 or /e2 from output_directory
+        # and TOPUP_or_EPIC_folder_name
+        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory[:-len("/e1")], \
+                                                                                       TOPUP_or_EPIC_folder_name, \
+                                                                                       FLAIR_3D_NIFTI_folder_name)
+
     flair_3d_file_name = extract_string_after_last_backslash(flair_3d_file)
     
     # Overview of file name and file (file directory + file name) 
@@ -774,7 +797,7 @@ def topup_pipeline(blip_down_file, blip_up_file):
     merged_image_for_topup_compute_file, \
     merged_image_file_raw, \
     blip_down_file_first_temp_window_moved, \
-    blip_up_file_first_temp_window_moved = split_and_merge_first_temporary_for_topup(output_directory, \
+    blip_up_file_first_temp_window_moved = split_and_or_merge_first_temporary_window(output_directory, \
                                                                           blip_down_file , \
                                                                           blip_up_file)    
     #"""
@@ -797,7 +820,7 @@ def topup_pipeline(blip_down_file, blip_up_file):
     corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_directory, \
                                                                     extract_string_after_last_backslash(corrected_4D_file))
     
-    report = evaluate_topup_performance(output_directory, \
+    report = compute_similarities(output_directory, \
                                         blip_down_file_first_temp_window_moved, \
                                         blip_up_file_first_temp_window_moved, \
                                         corrected_4D_file_postp, \
@@ -826,6 +849,193 @@ def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
     topup_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
     topup_pipeline.TOPUP_folder_name = TOPUP_folder_name
     topup_pipeline.EPI_NIFTI_applytopup_directory = EPI_NIFTI_applytopup_directory
+
+# TODO: Finish EPIC correction pipeline
+def epic_apply_pipeline(blip_up_nii_file, \
+                displacement_mgz_file, \
+                EPIC_working_directory, \
+                EPI_NIFTI_directory, \
+                EPI_NIFTI_applyepic_directory):
+
+    # - convert and move blip-up (DSC)
+    #   file to correct epic_pipeline.EPI_NIFTI_applyepic_directory
+    
+    
+    # - get name of raw DSC (forward EPI, which is blip_up_nii_file)
+    # - perform applyEpic on the forward EPI using the displacement field
+    #   save thre corrected DSC in corresponding EPI_NIFTI_applytopup_directory
+    # - convert the corrected DSC (.mgz) file into a .nii file
+    
+    
+    # As is now, this function must be called within
+    # the epic_pipeline function.
+    
+    blip_up_nii_file_name = extract_string_after_last_backslash(blip_up_nii_file)
+    
+    # Determine the file path + file name for the 
+    # copy destination of (the .nii) blip_up_nii_file .
+    # Original file name kept.
+    blip_up_nii_file_copied = EPIC_working_directory + "/" + \
+                            blip_up_nii_file_name
+    
+    # Copy blip_up_nii_file to the corresponding 
+    # TOPUP directory folder.
+    copy_file(blip_up_nii_file, blip_up_nii_file_copied)
+    
+    # Convert blip_up_nii_file_copied to .mgz format
+    # (in the same directory) and naming it 
+    # blip_up_mgz_file_copied
+    blip_up_mgz_file_copied = convert_nii_to_mgz(blip_up_nii_file_copied)
+    
+    # Run applytopup
+    blip_up_applyepic_mgz_file = \
+                                epic_apply_forward(blip_up_mgz_file_copied, \
+                                            extract_string_after_last_backslash(blip_up_mgz_file_copied), \
+                                            displacement_mgz_file, \
+                                            EPIC_working_directory)
+    
+    # Convert blip_up_applyepic_mgz_file
+    # to blip_up_applyepic_nii_file
+    blip_up_applyepic_nii_file = convert_mgz_to_nii(blip_up_applyepic_mgz_file)
+    
+    # Determine the final output directory for
+    # saving the the applyepic .nii output file.
+    # The string operations indexes away at both start and end of 
+    # the blip_up_nii_file string.
+    output_directory = EPI_NIFTI_applyepic_directory + \
+                    blip_up_nii_file[len(EPI_NIFTI_directory):-len(blip_up_nii_file_name)-1]
+    
+    # Directory needs to exist from here.
+    create_directory_if_not_exists(output_directory)
+
+
+    """
+    # Replace the header of blip_up_applytopup_postp_file
+    # with the original header (blip_up_file). This modifies
+    # the same file; blip_up_applytopup_postp_file 
+    # (does not create a new file).
+    copy_header(blip_up_file, blip_up_applytopup_postp_file)
+    """
+    
+    
+    # Determine final file name and location.
+    blip_up_applyepic_nii_file_name = \
+            extract_string_after_last_backslash(blip_up_applyepic_nii_file)
+    blip_up_applyepic_nii_file_copied = output_directory + "/" + \
+            blip_up_applyepic_nii_file_name
+    
+    # Finally, the blip_up_applyepic_nii_file
+    # is copied to output_directory; file path + file name:
+    # blip_up_applyepic_file_copied ,
+    # (same file name as in EPIC_working_directory).
+    copy_file(blip_up_applyepic_nii_file, blip_up_applyepic_nii_file_copied)
+
+def epic_pipeline(blip_down_file, blip_up_file):
+    
+    blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
+    
+    print("blip_down_file_name: %s" % blip_down_file_name)
+    
+    blip_up_file_name = extract_string_after_last_backslash(blip_up_file)
+    
+    print("blip_up_file_name: %s" % blip_up_file_name)
+    
+    output_directory = determine_output_directory(epic_pipeline.EPIC_folder_name, \
+                              epic_pipeline.EPI_NIFTI_folder_name, \
+                              blip_down_file, \
+                              blip_up_file, \
+                              blip_down_file_name, \
+                              blip_up_file_name) + "/" + \
+                              determine_e1_or_e2(blip_up_file)
+        
+    print("output_directory: %s" % output_directory)
+    
+    #print("DBG: create if not exists: %s" % output_directory)
+    
+    create_directory_if_not_exists(output_directory)
+    
+    # split_and_or_merge_first_temporary_window
+    # also used for EPIC 
+    blip_down_file_first_temp_window_moved, \
+    blip_up_file_first_temp_window_moved = split_and_or_merge_first_temporary_window(output_directory, \
+                                                                          blip_down_file , \
+                                                                          blip_up_file, \
+                                                                          "epic")    
+    # Blip Down is reverse - negative phase encoded EPI
+    # Blip Up is forward - positive phase encoded EPI
+    # 
+    # By name, I mean file path + / + file name
+    # - convert nii files to mgz files
+    blip_down_mgz_file_first_temp_window_moved = \
+            convert_nii_to_mgz(blip_down_file_first_temp_window_moved)
+    blip_up_mgz_file_first_temp_window_moved = \
+            convert_nii_to_mgz(blip_up_file_first_temp_window_moved)
+
+    # - perform epic on the converted files
+    # - get names of forward and reverse corrected files
+    # - get names of displacement field
+    forward_epi_corrected_mgz_file, \
+    reverse_epi_corrected_mgz_file, \
+    displacement_mgz_file = \
+    epic_compute(blip_up_mgz_file_first_temp_window_moved, \
+                 blip_down_mgz_file_first_temp_window_moved, \
+                 output_directory)
+
+    # - convert forward and reverse corrected files to .nii files
+    # - get names of the converted forward and reverse .nii files
+    reverse_epi_corrected_nii_file = \
+            convert_mgz_to_nii(reverse_epi_corrected_mgz_file)
+    forward_epi_corrected_nii_file = \
+            convert_mgz_to_nii(forward_epi_corrected_mgz_file)
+
+    # - use compute_similarities also for epic .
+    #   compute_similarities requires a 4D file
+    #   consisting of forward and reverse corrected EPI.    
+    #   so, first:
+    # - merge corrected reverse + forward EPI 
+    #   along time axis into a corrected_4D_file and run 
+    #   compute_similarities on it
+    corrected_4D_file = \
+            output_directory + "/" + \
+            "rfB0uw.nii"
+    merge_blip_down_blip_up_first_temporary_window(corrected_4D_file, \
+                                                   reverse_epi_corrected_nii_file, \
+                                                   forward_epi_corrected_nii_file)
+    
+    # - compute similarities between combinations
+    #  of raw, corrected reverse, forward and 3D FLAIR files
+    report = compute_similarities(output_directory, \
+                                        blip_down_file_first_temp_window_moved, \
+                                        blip_up_file_first_temp_window_moved, \
+                                        corrected_4D_file, \
+                                        epic_pipeline.EPIC_folder_name, \
+                                        epic_pipeline.FLAIR_3D_NIFTI_folder_name, \
+                                        "epic")
+    
+    # - put the similarity report
+    #   into the write queue
+    #   for group statistics
+    epic_pipeline.q.put(report)
+        
+    # Lastly, run applyepic using displacement_mgz_file
+    # on all temporary windows (DSC-MRI with contrast bolus)
+    # of the positive/forward phase encoded EPI (blip_up_file).
+    epic_apply_pipeline(blip_up_file, \
+                displacement_mgz_file, \
+                output_directory, \
+                epic_pipeline.EPI_NIFTI_folder_name, \
+                epic_pipeline.EPI_NIFTI_applyepic_directory)
+
+    
+def epic_pipeline_init(q, EPI_NIFTI_folder_name, \
+                        FLAIR_3D_NIFTI_folder_name,\
+                        EPIC_folder_name, \
+                        EPI_NIFTI_applyepic_directory):
+    epic_pipeline.q = q
+    epic_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
+    epic_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
+    epic_pipeline.EPIC_folder_name = EPIC_folder_name
+    epic_pipeline.EPI_NIFTI_applyepic_directory = EPI_NIFTI_applyepic_directory
 
 def listen_to_queue_and_write_to_file(q, report_file):
     # This operation report_file
@@ -981,3 +1191,17 @@ def dcm2niix_pipeline(DICOM_folder_name, \
                             NIFTI_folder_name, \
                             keyword, \
                             conversion_log_file)
+
+def make_directory_folders_EPIC_friendly(parent_path):
+    # https://stackoverflow.com/questions/41176509/python-how-to-replace-whitespaces-by-underscore-in-the-name-of-all-files-folde
+    # Renames the folder and file names within the (also relative) 
+    # directory parent_path to be Unix friendly
+    # -> Changes spaces to _
+    
+    for path, folders, files in os.walk(parent_path):
+        for f in files:
+            os.rename(os.path.join(path, f), os.path.join(path, f.replace(' ', '_')))
+        for i in range(len(folders)):
+            new_name = folders[i].replace(' ', '_')
+            os.rename(os.path.join(path, folders[i]), os.path.join(path, new_name))
+            folders[i] = new_name

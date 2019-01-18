@@ -1,0 +1,54 @@
+//////////////////////////////////////////////////////////////////////
+//
+// Input parameters file for "mri_atlasSelfConsistentWithPC". The only
+// requirements in writing a file like this are that a variable name
+// should be the first string in a line (the name may be preceded by
+// white space), followed by another string (doesn't matter what,
+// e.g., "="), followed by the value, and optionally followed by
+// another string or strings -- useful for documentation. Only one
+// parameter per line. Non-parameter lines will either be comment
+// lines (whose first non white-space characters must be "//") white
+// space lines, or empty lines.
+// 
+//////////////////////////////////////////////////////////////////////
+
+forwardImageInFileName = EPI_forward.mgh
+reverseImageInFileName = EPI_reverseFlipped.mgh
+
+forwardImageOutFileName = fB0uw.mgh
+reverseImageOutFileName = rB0uw.mgh
+
+displacementFieldInFileName  = // The previously calculated displacementField.
+displacementFieldOutFileName = d.mgh
+
+outDir = // /space/pogo2/1/holland/B0DistortionCorrection/REVtest_LG_01_28_08_3Tesla/unwarp03
+
+restart = 0			Switch to restart from a previously calculated displacementField.
+
+voxStep = 1			Take only every voxStep'd voxel in each dimension; int >= 1.
+
+nchunksZ = 4
+
+scaleImages = 1			Switch to scale images so that max value is imageMax
+imageMax = 3400.0
+
+kernelWidthMax  = 25		25 Pixel width of Gaussian kernel for blurring. Keep it an odd number >= 3, or 0.
+kernelWidthStep = 2		2 An even number!
+
+bicgstabTol     = 1.0e-8
+bicgstabMaxIter = 256
+hessianErrorMax = 256.0		See solveHessian.cpp
+
+cgVoxDifferential = 1.0		Differential shift of voxel coords for calculating gradients.
+cgTol             = 1.0e-3	See GSL manual: specifies accuracy of line minimization ~cos(theta).
+cgEpsAbs          = 1.0e-2	See GSL manual: specifies norm of gradient for convergence.
+cgStepSize        = 0.5		See GSL manual: size of the first trial step.
+cgMaxIterations   = 512 256
+
+nvoxNewZbdry = 0                0 for library testing, 2 for production executable
+
+lambda1  = 0.000
+lambda2  = 1.1e3		Halve this when using BOTH smoothers. Coefficient of gradient term in cost function. 0.0 <= lambda2 <= ~ 1.0e3 WHEN nchunksZ = 4
+lambda2P = 1.1e3		Second smoother. If not using, set to 0.0 (default value).
+				High value (~1.0e7) should result in almost no displacement.
+				Cost dominated by gradient term, tending to keep displacements to zero.

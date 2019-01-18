@@ -1,0 +1,43 @@
+
+#if 0  
+  const int nvoxNewZbdry ( 2 );
+  int depthNew( depth + 2*nvoxNewZbdry );
+  const bool fillDataNO ( false );
+  const float xsize ( forwardMri->info.vxlsize[1] );
+  const float ysize ( forwardMri->info.vxlsize[0] );
+  const float zsize ( forwardMri->info.vxlsize[2] );
+  fvol* createRescaledMri(const int, const int, const int,
+			  const float, const float,  const float, fvol*, const bool, const bool useCubic = false);
+  fvol* mriF = createRescaledMri(width, height, depthNew, xsize, ysize, zsize, forwardMri, fillDataNO);
+  fvol* mriR = createRescaledMri(width, height, depthNew, xsize, ysize, zsize, reverseMri, fillDataNO);
+  for(int x = 0; x < width; ++x)
+    for(int y = 0; y < height; ++y)
+      for(int z = 0; z < depth; ++z) {
+	float valF ( fVolGetVal(forwardMri, y, x, z) );
+	fVolSetVal(mriF, y, x, z+nvoxNewZbdry, valF);
+	float valR ( fVolGetVal(reverseMri, y, x, z) );
+	fVolSetVal(mriR, y, x, z+nvoxNewZbdry, valR);
+      }
+  for(int x = 0; x < width; ++x)
+    for(int y = 0; y < height; ++y) {
+      float valF ( fVolGetVal(forwardMri, y, x, 0) );      
+      float valR ( fVolGetVal(reverseMri, y, x, 0) );
+      for(int z = 0; z < nvoxNewZbdry; ++z) {
+	fVolSetVal(mriF, y, x, z, valF);
+	fVolSetVal(mriR, y, x, z, valR);
+      }
+    }
+  for(int x = 0; x < width; ++x)
+    for(int y = 0; y < height; ++y) {
+      float valF ( fVolGetVal(forwardMri, y, x, depth-1) );      
+      float valR ( fVolGetVal(reverseMri, y, x, depth-1) );
+      for(int z = depthNew-nvoxNewZbdry; z < depthNew; ++z) {
+	fVolSetVal(mriF, y, x, z, valF);
+	fVolSetVal(mriR, y, x, z, valR);
+      }
+    }
+  
+  writeOutput(mriF, mriR, d, p);
+#endif
+
+

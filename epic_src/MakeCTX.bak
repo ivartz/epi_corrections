@@ -1,0 +1,13 @@
+# Get repository directory full path
+#mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+#current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
+#CTXDIR = $(current_dir)/ctxsrc
+#CTXDIR = /media/loek/HDD3TB1/epic/EPIC_code/ctxsrc
+
+CTXDIR = $(shell pwd)/ctxsrc
+
+CTXINCBS = -I$(CTXDIR)/BasicStructs
+CTXINCINTERP = -I$(CTXDIR)/Interpolation
+
+CTXLIBBS = -L$(CTXDIR)/BasicStructs -lcorstruct
+CTXLIBINTERP = -L$(CTXDIR)/Interpolation -lcorinterp

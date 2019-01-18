@@ -1,0 +1,50 @@
+# Compilers
+#F77C = g77 #ifort
+F77C = ifort
+#F77C = gfortran
+#F90C = g77 #ifort
+F90C = ifort
+#F90C = gfortran
+CC   = icc #gcc #icc  
+#CC   = gcc #icc  
+C++C = icpc #g++ #icc  
+#C++C = g++ #icc  
+
+# Loaders
+LDRC = $(C++C)
+LDRF = $(F90C)
+
+OPT  = -O3 
+
+
+###############################
+# compilation options for Linux
+###############################
+CPP        = cpp
+CPP_FLAG   = -traditional
+
+F90SUFFIX  =
+FFIXEDFORM = #-FI
+FFLAGS     = $(OPT) -w -qopenmp
+
+OMPFLAGS = -qopenmp -parallel
+
+CFLAGS     = $(OPT) -msse3 -Wall $(OMPFLAGS) $(INCS)
+C++FLAGS   = $(CFLAGS)
+
+LDFLAGS    = $(OPT) -lpthread -ldl
+
+
+#############################
+# compilation options for IBM
+#############################
+#CPP        = /usr/lib/cpp                # Preprocissor
+#CPP_FLAG   =                             # Preprocissor
+#XPROF_FLAG = -pg
+#F90SUFFIX  = -qsuffix=f=f90
+#FFIXEDFORM = -qfixed
+#FFLAGS     = $(OPT) $(XPROF_FLAG)
+#CFLAGS     = $(OPT) -DIBM $(XPROF_FLAG)
+#C++FLAGS   = $(OPT) -DIBM $(XPROF_FLAG)  # C++
+#LIBTRACE   = -L/usr/local/apps/mpitrace/ -lmpitrace
+#LDFLAGS    = $(OPT) -lxlf90_r -lm $(LIBTRACE)

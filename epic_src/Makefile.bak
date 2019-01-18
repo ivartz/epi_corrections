@@ -1,0 +1,32 @@
+# Sets the variables LDRC,  LDFLAGS
+include MakeMacros
+include MakeImplicit
+include ObsList
+# This is for linking the BasicStructs and Interpolation 
+# shared objects. Sets variables 
+# CTSINCBS, CTXINCINTERP, CTXLIBBS, CTXLIBINTERP
+include MakeCTX
+
+EXE = unwarpB0
+
+# MKLLIBS are linked statically. Dynamic linking did not work.
+MKLLIBS = ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -Wl,--end-group -liomp5 -lpthread -lifcore -lifcoremt -lstdc++ -lm -ldl
+#MKLLIBS = ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -Wl,--end-group -liomp5 -lpthread -lifcore -lifcoremt -lm -ldl
+
+#INCS = -I/usr/local/include $(CTXINCBS) $(CTXINCINTERP)
+#LIBS = -lfftw3f $(CTXLIBBS) $(CTXLIBINTERP) $(MKLLIBS) -lm
+
+#INCS = $(CTXINCBS) $(CTXINCINTERP)
+
+LIBS = -lfftw3f $(CTXLIBBS) $(CTXLIBINTERP) $(MKLLIBS) -lm
+
+# OBS contains all the .h files
+$(EXE): $(OBS) *.h
+	$(LDRC) -DMKL_ILP64 -I${MKLROOT}/include -qopenmp $(INCS) $(LDFLAGS) $(OBS) -o $@ $(LIBS)
+
+copy_to_bin: $(EXE)
+	cp $(EXE) bin/
+
+clean:
+	rm -f *.o *~ $(EXE)
+

@@ -1,0 +1,4 @@
+/home/holland/mri/dev/unwarpB0/unwarpB0 -ip inputParams.txt \
+-f /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_forward.mgh \
+-r /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_reverseFlipped.mgh \
+-od /home/holland/mri/dev/unwarpB0/KILLERWHALES2

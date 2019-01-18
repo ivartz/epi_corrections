@@ -1,0 +1,12 @@
+# make must be called from repository
+# directory in order to get correct pwd
+
+CTXDIR = $(shell pwd)/ctxsrc
+
+# Shared Objects dynamically linked in compilation 
+# and also dynamically linked at run-time,
+# see SetUpEpic.sh (for dynamically linking at run-time) 
+# and README.md
+
+CTXLIBBS = -L$(CTXDIR)/BasicStructs -lcorstruct
+CTXLIBINTERP = -L$(CTXDIR)/Interpolation -lcorinterp

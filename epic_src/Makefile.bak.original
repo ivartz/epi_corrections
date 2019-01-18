@@ -1,0 +1,58 @@
+include MakeMacros
+include MakeImplicit
+include ObsList
+
+EXE = unwarpB0
+
+#MKLDIR  = /opt/intel/mkl/10.0.2.018
+#MKLDIR  = /usr/pubsw/packages/opt/intel/mkl/10.0.2.018
+#MKLLIBS = -L${MKLDIR}/lib/em64t -lmkl -lmkl_lapack -lguide -lpthread
+# https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
+# Static linked
+#MKLLIBS = -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a ${MKLROOT}/lib/intel64/libmkl_tbb_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -ltbb -lstdc++ -lpthread -lm -ldl
+# Dynamic linked
+#MKLLIBS =  -L${MKLROOT}/lib/intel64 -lmkl_intel_ilp64 -lmkl_tbb_thread -lmkl_core -ltbb -lstdc++ -lpthread -lm -ldl
+# Dynamic linked with libiomp5
+#MKLLIBS = -L${MKLROOT}/lib/intel64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
+# Dynamic linked with libiomp5 and ScaLAPACK using  MPICH2 together with installer at
+# http://www.netlib.org/scalapack/#_scalapack_installer_for_linux
+# using command: sudo apt install mpich
+# and in scalapack installed directory:
+# python python setyp.py --downall --mpichdir /usr/
+#MKLLIBS = -L${MKLROOT}/lib/intel64 -lmkl_scalapack_ilp64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_ilp64 -liomp5 -lpthread -lm -ldl 
+# 
+#MKLLIBS = -L${MKLROOT}/lib/intel64 -lmkl_intel_ilp64 -lmkl_blas95_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
+#MKLLIBS = -L${MKLROOT}/lib/intel64 -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -lmkl_blacs_intelmpi_ilp64 -liomp5 -lpthread -lm -ldl 
+
+# ip113 ip114
+#GSLLIBS = # NOT NEEDED! /usr/pubsw/packages/lib/libgsl.a # /usr/local/lib/libgsl.a # -lgsl #-lgslcblas
+#BLASLIB = -L/usr/lib/gcc/x86_64-redhat-linux/3.4.6 -lg2c #-lblas -lg2c
+#BLASLIB = 
+# BLAS, LAPACK and BLACS/ScaLAPACK library
+#BLASLIB = -L/home/loek/Downloads/scalapack_installer/install/lib -lrefblas -L/home/loek/Downloads/scalapack_installer/install/lib -ltmg -lreflapack -L/home/loek/Downloads/scalapack_installer/install/lib -lscalapack
+# BLACS/ScaLAPACK library
+#BLASLIB = -L/home/loek/Downloads/scalapack_installer/install/lib -lscalapack
+
+# ip18 ip15 clusters
+#GSLLIBS = -lgsl # /usr/pubsw/packages/lib/libgsl.a # /usr/local/lib/libgsl.a # -lgsl #-lgslcblas
+#BLASLIB = -lg2c # -L/usr/lib/gcc/x86_64-redhat-linux/3.4.6 -lg2c #-lblas -lg2c
+
+
+INCS = -I/usr/local/include $(CTXINCBS) $(CTXINCINTERP)
+#INCS = -I/usr/local/include
+#LIBS = -lfftw3f $(CTXLIBBS) $(CTXLIBINTERP) $(BLASLIB) $(MKLLIBS) $(GSLLIBS)
+#LIBS = -lfftw3f $(MKLLIBS) -lm
+LIBS = -lfftw3f $(CTXLIBBS) $(CTXLIBINTERP) /home/loek/Downloads/scalapack_installer/install/lib/librefblas.a /home/loek/Downloads/scalapack_installer/install/lib/libtmg.a /home/loek/Downloads/scalapack_installer/install/lib/libreflapack.a /home/loek/Downloads/scalapack_installer/install/lib/libscalapack.a -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl -nofor-main 
+
+include MakeCTX
+
+#include $(CTXDIR)/oscpu.def
+
+$(EXE): $(OBS) *.h
+	$(LDRC) $(INCS) $(LDFLAGS) $(OBS) -o $@ $(LIBS)
+
+#install: $(EXE)
+#	cp $(EXE) /home/holland/bin/
+
+clean:
+	rm -f *.o *~ $(EXE)

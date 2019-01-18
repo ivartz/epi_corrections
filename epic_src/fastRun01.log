@@ -1,0 +1,217 @@
+ip03.ucsd.edu:/home/holland/mri/dev/unwarpB0% ./run
+/home/holland/mri/dev/unwarpB0/unwarpB0
+-ip
+inputParams.txt
+-f
+/space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_forward.mgh
+-r
+/space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_reverseFlipped.mgh
+-od
+/home/holland/mri/dev/unwarpB0/KILLERWHALES
+
+Have parameters:
+
+defaults                     =  0
+forwardImageInFileName       = /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_forward.mgh
+reverseImageInFileName       = /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_reverseFlipped.mgh
+forwardImageOutFileName      = fB0uw.mgh
+reverseImageOutFileName      = rB0uw.mgh
+displacementFieldInFileName  =
+displacementFieldOutFileName = d.mgh
+outDir                       = /home/holland/mri/dev/unwarpB0/KILLERWHALES
+restart                      = 0
+voxStep                      = 1
+nchunksZ                     = 4
+scaleImages                  = 1
+imageMax                     = 3400
+kernelWidthMax               = 21
+kernelWidthStep              = 4
+nvoxNewZbdry                 = 0
+lambda1                      = 0
+lambda2                      = 1100
+lambda2P                     = 1100
+bicgstabTol                  = 1e-08
+bicgstabMaxIter              = 256
+hessianErrorMax              = 256
+cgVoxDifferential            = 1
+cgTol                        = 0.001
+cgEpsAbs                     = 0.01
+cgStepSize                   = 0.5
+cgMaxIterations              = 512
+
+mriClass.cpp:
+Reading /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_forward.mgh
+Reading done.
+
+ Image Volume info:
+ Number of Rows: 128
+ Number of Columns: 128
+ Number of Slices: 47
+ Number of Volumes: 1
+ DataType: 3  Bytes for each data: 4
+ Total Voxel count: 770048 Total Bytes Count: 3080192
+ Total Voxel count per Volume: 770048 Total Bytes Count per Volume: 3080192
+ Voxel size in mm :   1.875  1.875  2.500
+
+ Mapping From Voxel to Patient LPH (M_vxl2lph):
+ -0.000000  1.875000 -0.000000 -120.999001
+  1.875000 -0.000000 -0.000000 -162.100998
+  0.000000  0.000000 -2.500000  76.014397
+  0.000000  0.000000  0.000000  1.000000
+
+ Mapping From Patient LPH to Gradient LPH   (M_pat2grad):
+  1.000000  0.000000  0.000000  0.000000
+  0.000000  1.000000  0.000000  0.000000
+  0.000000  0.000000  1.000000  0.000000
+  0.000000  0.000000  0.000000  1.000000
+
+mriClass.cpp:
+Expanding z-boundaries by 0 voxels, i.e., adding 0 new xy-planes at top and bottom...
+ Memory allocated: 1
+ Image Volume info:
+ Number of Rows: 128
+ Number of Columns: 128
+ Number of Slices: 47
+ Number of Volumes: 0
+ DataType: 3  Bytes for each data: 4
+ Total Voxel count: 770048 Total Bytes Count: 3080192
+ Total Voxel count per Volume: 770048 Total Bytes Count per Volume: 3080192
+ Voxel size in mm :   1.875  1.875  2.500
+
+ Mapping From Voxel to Patient LPH (M_vxl2lph):
+ -0.000000  1.875000 -0.000000 -120.999001
+  1.875000 -0.000000 -0.000000 -162.100998
+  0.000000  0.000000 -2.500000  76.014397
+  0.000000  0.000000  0.000000  1.000000
+
+ Mapping From Patient LPH to Gradient LPH   (M_pat2grad):
+  1.000000  0.000000  0.000000  0.000000
+  0.000000  1.000000  0.000000  0.000000
+  0.000000  0.000000  1.000000  0.000000
+  0.000000  0.000000  0.000000  1.000000
+
+mriClass.cpp:
+Reading /space/md9/1/holland/B0DistortionCorrection/REVtest_LG_1_24_08_1.5Tesla/EPI_reverseFlipped.mgh
+Reading done.
+ Memory allocated: 1
+ Image Volume info:
+ Number of Rows: 128
+ Number of Columns: 128
+ Number of Slices: 47
+ Number of Volumes: 1
+ DataType: 3  Bytes for each data: 4
+ Total Voxel count: 770048 Total Bytes Count: 3080192
+ Total Voxel count per Volume: 770048 Total Bytes Count per Volume: 3080192
+ Voxel size in mm :   1.875  1.875  2.500
+
+ Mapping From Voxel to Patient LPH (M_vxl2lph):
+ -0.000000  1.875000 -0.000000 -120.999001
+  1.875000 -0.000000 -0.000000 -162.100998
+  0.000000  0.000000 -2.500000  76.014397
+  0.000000  0.000000  0.000000  1.000000
+
+ Mapping From Patient LPH to Gradient LPH   (M_pat2grad):
+  1.000000  0.000000  0.000000  0.000000
+  0.000000  1.000000  0.000000  0.000000
+  0.000000  0.000000  1.000000  0.000000
+  0.000000  0.000000  0.000000  1.000000
+
+mriClass.cpp:
+Expanding z-boundaries by 0 voxels, i.e., adding 0 new xy-planes at top and bottom...
+ Memory allocated: 1
+ Image Volume info:
+ Number of Rows: 128
+ Number of Columns: 128
+ Number of Slices: 47
+ Number of Volumes: 0
+ DataType: 3  Bytes for each data: 4
+ Total Voxel count: 770048 Total Bytes Count: 3080192
+ Total Voxel count per Volume: 770048 Total Bytes Count per Volume: 3080192
+ Voxel size in mm :   1.875  1.875  2.500
+
+ Mapping From Voxel to Patient LPH (M_vxl2lph):
+ -0.000000  1.875000 -0.000000 -120.999001
+  1.875000 -0.000000 -0.000000 -162.100998
+  0.000000  0.000000 -2.500000  76.014397
+  0.000000  0.000000  0.000000  1.000000
+
+ Mapping From Patient LPH to Gradient LPH   (M_pat2grad):
+  1.000000  0.000000  0.000000  0.000000
+  0.000000  1.000000  0.000000  0.000000
+  0.000000  0.000000  1.000000  0.000000
+  0.000000  0.000000  0.000000  1.000000
+
+
+intensityScaleImages.cpp:
+val1max = 8302  val2max  = 4763
+Rescaling intensities of both images by iscale = 0.40954
+
+p.getKernelWidthMax() = 21
+computeDeformationField.cpp:  30
+        kernelWidthMax  = 21
+        kernelWidthStep = 4
+computeDeformationField.cpp:  43
+        kernelWidthMax  = 21
+        kernelWidthStep = 4
+computeDeformationField.cpp:  67
+        kernelWidth     = 21
+        kernelWidthStep = 4
+sigma = 3.5;  kernelWidth/2 = 10
+computeDeformationField.cpp:  67
+        kernelWidth     = 17
+        kernelWidthStep = 4
+sigma = 2.83333;  kernelWidth/2 = 8
+computeDeformationField.cpp:  67
+        kernelWidth     = 13
+        kernelWidthStep = 4
+sigma = 2.16667;  kernelWidth/2 = 6
+computeDeformationField.cpp:  67
+        kernelWidth     = 9
+        kernelWidthStep = 4
+sigma = 1.5;  kernelWidth/2 = 4
+computeDeformationField.cpp:  67
+        kernelWidth     = 5
+        kernelWidthStep = 4
+sigma = 0.833333;  kernelWidth/2 = 2
+computeDeformationField.cpp:  67
+        kernelWidth     = 3
+        kernelWidthStep = 4
+sigma = 0.5;  kernelWidth/2 = 1
+computeDeformationField.cpp:  67
+        kernelWidth     = 0
+        kernelWidthStep = 4
+ Memory allocated: 1
+compute time computeDeformationField() (seconds): 42
+processSubject.cpp: Duration: 42 seconds
+writeOutput.cpp:        19
+writeFullCorrectedVolumes.cpp:
+ Using cubic interpolation...
+
+writeFullCorrectedVolumes.cpp:
+dispyMin = -4.36511
+writeImage.cpp:
+Writing /home/holland/mri/dev/unwarpB0/KILLERWHALES/fB0uw.mgh
+Writing done.
+
+writeImage.cpp:
+Writing /home/holland/mri/dev/unwarpB0/KILLERWHALES/rB0uw.mgh
+Writing done.
+
+writeImage.cpp:
+Writing /home/holland/mri/dev/unwarpB0/KILLERWHALES/avgEIP.mgz
+Writing done.
+
+writeImage.cpp:
+Writing /home/holland/mri/dev/unwarpB0/KILLERWHALES/difEIP.mgz
+Writing done.
+
+writeImage.cpp:
+Writing /home/holland/mri/dev/unwarpB0/KILLERWHALES/d.mgh
+Writing done.
+
+mriClass.cpp100:
+0x13d60d90
+mriClass.cpp100:
+0x13d3c210
+Duration: 47 seconds
+ip03.ucsd.edu:/home/holland/mri/dev/unwarpB0% 

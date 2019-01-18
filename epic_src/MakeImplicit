@@ -1,0 +1,35 @@
+
+#------------------ suffixes -----------------------------------------
+
+.SUFFIXES:
+.SUFFIXES: .F .F90 .f .f90 .c .C .cpp .c++ .o
+
+
+#------------------ implicit rules -----------------------------------
+
+.F90.o:
+	${CPP} -P ${CPP_FLAG} $< > $*.f90
+	$(F90C) $(FFLAGS) $(F90SUFFIX) $(FFIXEDFORM) -c $*.f90
+.f90.o:
+	$(F90C) $(FFLAGS) $(F90SUFFIX) $(FFIXEDFORM) -c $*.f90
+
+.F.f:
+	${CPP} -P ${CPP_FLAG} $< > $*.f
+.F.o:
+	${CPP} -P ${CPP_FLAG} $< > $*.f
+	$(F77C) $(FFLAGS) $(FFIXEDFORM) -c $*.f
+.f.o:
+	$(F77C) $(FFLAGS) $(FFIXEDFORM) -c $*.f
+
+
+.c.o:	*.h
+	$(CC) $(CFLAGS) -c $*.c
+
+.C.o:	*.h
+	$(C++C) $(C++FLAGS) -c $*.C
+
+.cpp.o:	*.h
+	$(C++C) $(C++FLAGS) -c $*.cpp
+
+.c++.o:	*.h
+	$(C++C) $(C++FLAGS) -c $*.c++

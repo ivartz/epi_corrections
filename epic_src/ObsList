@@ -1,0 +1,34 @@
+OBS =	\
+	BiCGSTABF.o \
+	BiCGSTABREVCOM.o \
+	STOPTEST2.o \
+	\
+	dlapackF.o \
+	\
+	bicgstabc.o \
+	blurImages.o \
+	checkCommandLine.o \
+	checkInOutDirs.o \
+	computeDeformationField.o \
+	createRescaledMri.o \
+	cstring_copy.o \
+	getNumVox.o \
+	initDispyFullRes.o \
+	inputParams.o \
+	intensityScaleImages.o \
+	loadDispy.o \
+	makeDirectory.o \
+	mriClass.o \
+	mriToFloatArray.o \
+	processSubject.o \
+	setGaussianKernel.o \
+	setupHessian.o \
+	solveHessian.o \
+	split.o \
+	unwarpB0.o \
+	usage.o \
+	writeFullCorrectedVolumes.o \
+	writeImage.o \
+	writeOutput.o 
+
+# No need for dblasF.o with mkl

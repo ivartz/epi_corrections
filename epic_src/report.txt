@@ -1,0 +1,85 @@
+./unwarpB0
+-f
+/media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_forward.mgz
+-r
+/media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_reverse.mgz
+-od
+/media/loek/HDD3TB1/epic/EPIC_code/bin/out_test
+
+Have parameters:
+
+defaults                     =  0
+forwardImageInFileName       = /media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_forward.mgz
+reverseImageInFileName       = /media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_reverse.mgz
+forwardImageOutFileName      = fB0uw.mgz
+reverseImageOutFileName      = rB0uw.mgz
+displacementFieldInFileName  = 
+displacementFieldOutFileName = d.mgz
+outDir                       = /media/loek/HDD3TB1/epic/EPIC_code/bin/out_test
+restart                      = 0
+voxStep                      = 1
+nchunksZ                     = 4
+scaleImages                  = 1
+imageMax                     = 3400
+kernelWidthMax               = 25
+kernelWidthStep              = 2
+nvoxNewZbdry                 = 2
+lambda1                      = 0
+lambda2                      = 1100
+lambda2P                     = 1100
+bicgstabTol                  = 1e-08
+bicgstabMaxIter              = 256
+hessianErrorMax              = 256
+cgVoxDifferential            = 1
+cgTol                        = 0.001
+cgEpsAbs                     = 0.01
+cgStepSize                   = 0.5
+cgMaxIterations              = 512
+
+mriClass.cpp:
+Reading /media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_forward.mgz
+Reading done.
+mriClass.cpp:
+Expanding z-boundaries by 2 voxels, i.e., adding 2 new xy-planes at top and bottom...
+createRescaledMri.cpp:
+widthS  = 128	widthC  = 128
+heightS = 128	heightC = 128
+depthS  = 47	depthC  = 51
+
+xsizeS  = 1.875	xsizeC  = 1.875
+ysizeS  = 1.875	ysizeC  = 1.875
+zsizeS  = 2.5	zsizeC  = 2.5
+depthC-depthS   = 4
+createRescaledMri.cpp
+Rescaling image...
+
+mriClass.cpp:
+Reading /media/loek/HDD3TB1/epic/EPIC_code/bin/img-mgz/EPI_reverse.mgz
+Reading done.
+mriClass.cpp:
+Expanding z-boundaries by 2 voxels, i.e., adding 2 new xy-planes at top and bottom...
+createRescaledMri.cpp:
+widthS  = 128	widthC  = 128
+heightS = 128	heightC = 128
+depthS  = 47	depthC  = 51
+
+xsizeS  = 1.875	xsizeC  = 1.875
+ysizeS  = 1.875	ysizeC  = 1.875
+zsizeS  = 2.5	zsizeC  = 2.5
+depthC-depthS   = 4
+createRescaledMri.cpp
+Rescaling image...
+
+
+intensityScaleImages.cpp:
+val1max = 8302	val2max  = 4763
+Rescaling intensities of both images by iscale = 0.40954
+
+p.getKernelWidthMax() = 25
+computeDeformationField.cpp:  96
+	kernelWidth     = 25
+	kernelWidthStep = 2
+lambda1  = 0
+lambda2  = 1100
+lambda2P = 1100
+sigma = 4.16667;  kernelWidth/2 = 12
