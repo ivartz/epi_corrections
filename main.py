@@ -56,16 +56,16 @@ def main():
     # Need to be True for EPIC to work. 
     # Will modify the folder and file names in DICOM_directory
     replace_spaces_with__ = True
-    run_dcm2niix = False
+    run_dcm2niix = True
     run_topup = True
-    run_epic = False
+    run_epic = True
     
     # No spaces. Can be a date [yyyy_mm_dd]
     run_output_directory_suffix = "2019_01_18"
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_automation_TEST"
+    DICOM_directory = "../DICOM_no_spaces"
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all

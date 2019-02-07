@@ -4,6 +4,8 @@ magnetic susceptibility induced (geometric and intensity)
 artefacts from off-resonance field in EPI MRI images. 
 Using FSL topup and EPIC.
 
+See reports/PosterHovden.pdf (NFMF MedFys 2019).
+
 The methods make use of the different distortions in 
 Echo Planar Images (EPI) depending on direction of 
 phase encoding in the k-space EPI encoding 
@@ -18,11 +20,11 @@ image in the pair, aiming the two to be identical.
 
 Dependencies:
 
-FSL 6.0.0 : For topup and various tools used
-EPIC (TODO included in the folder epic)
-freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register
-nipype : for similarity metrics
-dcm2niix version v1.0.20181125  GCC7.3.0 (64-bit Linux) 
+- FSL 6.0.0 : For topup and various tools used
+- EPIC (included in the folder epic_src)
+- freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register
+- nipype : for similarity metrics
+- dcm2niix version v1.0.20181125  GCC7.3.0 (64-bit Linux) 
 modified by Oliver M. Geier to not reorient the scan to the 
 scanner's RPI coordinate system (so that the orientation of .nii 
 files converted with dcm2niix match the orientation of the 
