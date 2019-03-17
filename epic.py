@@ -88,23 +88,23 @@ def epic_compute(forward_epi_mgz_file, \
             reverse_epi_corrected_mgz_file, \
             displacement_mgz_file
 
-def epic_apply_forward(forward_epi_mgz_file, \
-                       forward_epi_mgz_file_name, \
+def epic_apply_reverse(reverse_epi_mgz_file, \
+                       reverse_epi_mgz_file_name, \
                        displacement_mgz_file, \
                        output_directory):
     
     process_msg_prefix = "PID %i: " % os.getpid()
     
-    forward_epi_corrected_mgz_file_name = \
-        forward_epi_mgz_file_name[:-len(".mgz")] + \
+    reverse_epi_corrected_mgz_file_name = \
+        reverse_epi_mgz_file_name[:-len(".mgz")] + \
         "_applyepic.mgz"
     
     source_script = 'epic_src/SetUpEpic.sh'
     
     full_command = 'epic_src/bin/applyEpic ' + \
-        '-f ' + '"' + forward_epi_mgz_file + '"' + ' ' + \
+        '-r ' + '"' + reverse_epi_mgz_file + '"' + ' ' + \
         '-d ' + '"' + displacement_mgz_file + '"' + ' ' + \
-        '-fo ' + '"' + forward_epi_corrected_mgz_file_name + '"' + ' ' + \
+        '-ro ' + '"' + reverse_epi_corrected_mgz_file_name + '"' + ' ' + \
         '-od ' + '"' + output_directory + '"'
         #'-od ' + '"/' + output_directory + '"' # (A '/' must precede the text name of the directory.)
 
@@ -112,14 +112,14 @@ def epic_apply_forward(forward_epi_mgz_file, \
 
     run_shell_command_with_environment(full_command, source_script)
         
-    forward_epi_corrected_mgz_file = \
-        output_directory + "/" + forward_epi_corrected_mgz_file_name
+    reverse_epi_corrected_mgz_file = \
+        output_directory + "/" + reverse_epi_corrected_mgz_file_name
     
-    print(process_msg_prefix + "epic_apply_forward: Successfully unwarped DSC EPI " + \
-                  forward_epi_mgz_file + " " + \
+    print(process_msg_prefix + "epic_apply_reverse: Successfully unwarped DSC EPI " + \
+                  reverse_epi_mgz_file + " " + \
                   "into DSC EPI " + \
-                  forward_epi_corrected_mgz_file + " " + \
+                  reverse_epi_corrected_mgz_file + " " + \
                   "using displacement field " + \
                   displacement_mgz_file)
     
-    return forward_epi_corrected_mgz_file
+    return reverse_epi_corrected_mgz_file

@@ -55,17 +55,23 @@ def main():
     # any spaces in file names and paths.
     # Need to be True for EPIC to work. 
     # Will modify the folder and file names in DICOM_directory
-    replace_spaces_with__ = True
+    replace_spaces_with__ = False
+    
     run_dcm2niix = True
+    #run_dcm2niix = False
+    
     run_topup = True
+    #run_topup = False
+    
     run_epic = True
+    #run_epic = False
     
     # No spaces. Can be a date [yyyy_mm_dd]
-    run_output_directory_suffix = "2019_01_18"
+    run_output_directory_suffix = "2019_04_17_372114315_reverse_pair_order_3"
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_no_spaces"
+    DICOM_directory = "../DICOM_372114315_no_spaces"
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
@@ -113,6 +119,21 @@ def main():
 
     if run_topup or run_epic:
         # Detect EPI pairs in EPI_NIFTI_directory
+        
+        # Important assumptions:
+        # GE_blip_nii_pairs and SE_blip_nii_pairs
+        # each are lists of tuples on the form:
+        
+        # [( blip-down (negative (FSL TOPUP) or reverse (EPIC) or "strethed" along y / AP) 
+        # , blip-up (positive (FSL TOPUP) or forward (EPIC) or "compressed" along y / AP) ), (,), ...]
+        
+        # This definition is compatible with the specific dcm2niix used: dcm2niix_ogeier
+        # that is compiled to avoid reorienting images during the conversion
+        # from patient to scanner coordinate system.
+        
+        # EPI pairs.
+        # The two lists is are used later for topup and EPIC.
+        
         #GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_directory)
         GE_blip_nii_pairs, SE_blip_nii_pairs = get_blip_pairs(EPI_NIFTI_directory)
         

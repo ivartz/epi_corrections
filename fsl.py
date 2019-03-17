@@ -111,7 +111,7 @@ def topup_compute(merged_image_for_topup_compute_file, \
               merged_image_for_topup_compute_file + " into " + \
               iout_name)
     
-    return iout_name + ".nii", out_name
+    return iout_name + ".nii", out_name, fout_name + ".nii"
 
 def topup_apply(prepared_4D_file, datain, topup_out_base_name_file):
     
@@ -124,7 +124,7 @@ def topup_apply(prepared_4D_file, datain, topup_out_base_name_file):
     pre_command = 'FSLOUTPUTTYPE=NIFTI'
     
     command = 'applytopup --imain=' + '"' + prepared_4D_file[:-len(".nii")] + \
-        '"' + ' ' + '--inindex=2'  + \
+        '"' + ' ' + '--inindex=1'  + \
         ' ' + '--datain='  + '"' + datain + \
         '"' + ' ' + '--topup=' + '"' + topup_out_base_name_file + \
         '"' + ' ' + '--out='  + '"' + out_name + '" --method=jac'

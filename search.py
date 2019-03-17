@@ -22,8 +22,8 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
     # assuming prescan corresponds to corr_SENSE
     # and scan corresponds to SENSE
     
-    # assuming prescan and corr_SENSE are always negative phase encoding directions
-    # and scan and SENSE positive phase encoding directions
+    # assuming prescan and corr_SENSE are always positive phase encoding directions
+    # and scan and SENSE negative phase encoding directions
     
     # Empty lists for relative directory path + filename.nii to be corrected
     
@@ -130,38 +130,38 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
     
                     if determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "prescan":
-                        # GE negative phase encoded
+                        # GE positive phase encoded
                         GE_prescan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "scan":
-                        # GE positive phase encoded
+                        # GE negative phase encoded
                         GE_scan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
-                        # GE negative phase encoded
+                        # GE positive phase encoded
                         GE_corr_SENSE += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "SENSE":
-                        # GE positive phase encoded
+                        # GE negative phase encoded
                         GE_SENSE += [os.path.join(dirpath, file)]
                         
                     # the two last are for a special case
                     # with a EPI pair recording
-                    # where corr seems to be positive phase
+                    # where corr seems to be negative phase
                     # encoded and the other file name has nothing
                     # in it's name that is specified and seems to
-                    # be negative phase encoded recording.
+                    # be positive phase encoded recording.
                     elif determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "not_corr":
-                        # GE negative phase encoded
+                        # GE positive phase encoded
                         GE_not_corr += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr":
-                        # GE positive phase encoded
+                        # GE negative phase encoded
                         GE_corr += [os.path.join(dirpath, file)]
     
                         
@@ -169,38 +169,38 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
     
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "prescan":
-                        # SE negative phase encoded
+                        # SE positive phase encoded
                         SE_prescan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "scan":
-                        # SE positive phase encoded
+                        # SE negative phase encoded
                         SE_scan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
-                        # SE negative phase encoded
+                        # SE positive phase encoded
                         SE_corr_SENSE += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "SENSE":
-                        # SE positive phase encoded
+                        # SE negative phase encoded
                         SE_SENSE += [os.path.join(dirpath, file)]
     
                     # the two last are for a special case
                     # with a EPI pair recording
-                    # where corr seems to be positive phase
+                    # where corr seems to be negative phase
                     # encoded and the other file name has nothing
                     # in it's name that is specified and seems to
-                    # be negative phase encoded recording.                    
+                    # be positive phase encoded recording.                    
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "not_corr":
-                        # negative phase encoded
+                        # positive phase encoded
                         SE_not_corr += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
                     determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr":
-                        # positive phase encoded
+                        # negative phase encoded
                         SE_corr += [os.path.join(dirpath, file)]
     
                         
@@ -216,11 +216,13 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
     
     
     # Finally, make GE and SE list of 2D tuples of relative path + filename.nii
-    # for blip-down - blip-up EPI pairs. The two lists is are used later for topup and EPIC.
-    GE_blip_nii_pairs = list(zip(GE_prescan, GE_scan)) + \
-        list(zip(GE_corr_SENSE, GE_SENSE)) + list(zip(GE_not_corr, GE_corr))
-    SE_blip_nii_pairs = list(zip(SE_prescan, SE_scan)) + \
-        list(zip(SE_corr_SENSE, SE_SENSE)) + list(zip(SE_not_corr, SE_corr))
+    # for blip-down (negative (FSL TOPUP), forward (EPIC), "compressed" along y / AP) 
+    # - blip-up (positive (FSL TOPUP), reverse (EPIC), "stretched" along y / AP) EPI pairs.
+    # The two lists is are used later for topup and EPIC.
+    GE_blip_nii_pairs = list(zip(GE_scan, GE_prescan)) + \
+        list(zip(GE_SENSE, GE_corr_SENSE)) + list(zip(GE_corr, GE_not_corr))
+    SE_blip_nii_pairs = list(zip(SE_scan, SE_prescan)) + \
+        list(zip(SE_SENSE, SE_corr_SENSE)) + list(zip(SE_corr, SE_not_corr))
     
     print("4. Equal number of GE and SE prescan+corr_SENSE+not_corr and scan+SENSE+corr included: ", end="")
     print(len(GE_blip_nii_pairs) == len(SE_blip_nii_pairs))

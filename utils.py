@@ -24,7 +24,7 @@ from registration import highres_to_lowres_registration
 from epic import convert_nii_to_mgz, \
     convert_mgz_to_nii, \
     epic_compute, \
-    epic_apply_forward
+    epic_apply_reverse
 
 def remove_substring_after_last_slash(string_with_slashes):
     # Index for last "/" in string_with_slashes
@@ -471,7 +471,7 @@ def compute_similarities(output_directory, \
         # Find corresponding (already converted to NIFTI)
         # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
         # if it exists. Return "not found" elsewise.
-        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory, \
+        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory[:-len("/e1")], \
                                                                                        TOPUP_or_EPIC_folder_name, \
                                                                                        FLAIR_3D_NIFTI_folder_name)
     elif correction_method == "epic":
@@ -697,7 +697,8 @@ def copy_file(source_file, destination_file):
                 '"'
     run_shell_command(command)
 
-def topup_apply_pipeline(blip_up_file, \
+def topup_apply_pipeline(off_resonance_field_file_postp, \
+                         blip_down_file, \
                 topup_out_base_name_file, \
                 topup_datain, \
                 TOPUP_working_directory, \
@@ -707,68 +708,80 @@ def topup_apply_pipeline(blip_up_file, \
     # As is now, this function must be called within
     # the topup_pipeline function.
     
-    blip_up_file_name = extract_string_after_last_backslash(blip_up_file)
+    blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
     
     # Determine the file path + file name for the 
     # copy destination of blip_up_file .
     # Original file name kept.
-    blip_up_file_copied = TOPUP_working_directory + "/" + \
-                            blip_up_file_name
+    blip_down_file_copied = TOPUP_working_directory + "/" + \
+                            blip_down_file_name
     
-    # Copy blip_up_file to the corresponding 
+    # Copy blip_down_file to the corresponding 
     # TOPUP directory folder.
-    copy_file(blip_up_file, blip_up_file_copied)
+    copy_file(blip_down_file, blip_down_file_copied)
     
     # Add top and bottom duplicate slices
     # along z axis on the entire copied file 
     # (all temoprary windows get added 
     # top and bottom duplicate slice).
-    # blip_up_file_copied_prep_topup is the 4D file containing 
+    # blip_down_file_copied_prep_topup is the 4D file containing 
     # all temporary volumes that applytopup is going to run on
     # together with topup_out_base_name_file
     # The command generates files that are saved in the working directory.
-    blip_up_file_copied_prep_topup = add_duplicate_slices(TOPUP_working_directory, \
-                                                         blip_up_file_name)
+    blip_down_file_copied_prep_topup = add_duplicate_slices(TOPUP_working_directory, \
+                                                         blip_down_file_name)
     
     # Run applytopup
-    blip_up_applytopup_file = \
-                                topup_apply(blip_up_file_copied_prep_topup, \
+    blip_down_applytopup_file = \
+                                topup_apply(blip_down_file_copied_prep_topup, \
                                             topup_datain, \
                                             topup_out_base_name_file)
     
     # Determine the final output directory for
     # saving the the applytopup .nii output file.
     # The string operations indexes away at both start and end of 
-    # the blip_up_file string.
+    # the blip_down_file string.
     output_directory = EPI_NIFTI_applytopup_directory + \
-                    blip_up_file[len(EPI_NIFTI_directory):-len(blip_up_file_name)-1]
+                    blip_down_file[len(EPI_NIFTI_directory):-len(blip_down_file_name)-1]
     
     # Directory needs to exist from here.
     create_directory_if_not_exists(output_directory)
 
-    # Remove empty top and bottom z slices of blip_up_applytopup_file ,
+    # Remove empty top and bottom z slices of blip_down_applytopup_file ,
     # which is a side effect of topup and applytopup. 
-    blip_up_applytopup_postp_file = \
+    blip_down_applytopup_postp_file = \
     remove_first_and_last_slices_and_save(TOPUP_working_directory, \
-                                          extract_string_after_last_backslash(blip_up_applytopup_file))
+                                          extract_string_after_last_backslash(blip_down_applytopup_file))
     
-    # Replace the header of blip_up_applytopup_postp_file
-    # with the original header (blip_up_file). This modifies
-    # the same file; blip_up_applytopup_postp_file 
+    # Replace the header of blip_down_applytopup_postp_file
+    # with the original header (blip_down_file). This modifies
+    # the same file; blip_down_applytopup_postp_file 
     # (does not create a new file).
-    copy_header(blip_up_file, blip_up_applytopup_postp_file)
+    copy_header(blip_down_file, blip_down_applytopup_postp_file)
     
     # Determine final file name and location.
-    blip_up_applytopup_postp_file_name = \
-            extract_string_after_last_backslash(blip_up_applytopup_postp_file)
-    blip_up_applytopup_postp_file_copied = output_directory + "/" + \
-            blip_up_applytopup_postp_file_name        
+    blip_down_applytopup_postp_file_name = \
+            extract_string_after_last_backslash(blip_down_applytopup_postp_file)
+    blip_down_applytopup_postp_file_copied = output_directory + "/" + \
+            blip_down_applytopup_postp_file_name        
     
-    # Finally, the blip_up_applytopup_postp_file
+    # Finally, the blip_down_applytopup_postp_file
     # is copied to output_directory; file path + file name:
-    # blip_up_applytopup_postp_file_copied ,
+    # blip_down_applytopup_postp_file_copied ,
     # (same file name as in TOPUP_working_directory).
-    copy_file(blip_up_applytopup_postp_file, blip_up_applytopup_postp_file_copied)
+    copy_file(blip_down_applytopup_postp_file, blip_down_applytopup_postp_file_copied)
+    
+    # Similarity, copy the off resonance field file 
+    # off_resonance_field_file_postp
+    # to the corresponding applytopup directory.
+    
+    # Determine final file name and location.
+    off_resonance_field_postp_file_name = \
+            extract_string_after_last_backslash(off_resonance_field_file_postp)
+    off_resonance_field_postp_file_copied = output_directory + "/" + \
+            off_resonance_field_postp_file_name        
+    
+    copy_file(off_resonance_field_file_postp, off_resonance_field_postp_file_copied)
 
 
 def topup_pipeline(blip_down_file, blip_up_file):
@@ -786,7 +799,8 @@ def topup_pipeline(blip_down_file, blip_up_file):
                               blip_down_file, \
                               blip_up_file, \
                               blip_down_file_name, \
-                              blip_up_file_name)
+                              blip_up_file_name) + "/" + \
+                              determine_e1_or_e2(blip_up_file)
         
     print("output_directory: %s" % output_directory)
     
@@ -807,10 +821,11 @@ def topup_pipeline(blip_down_file, blip_up_file):
     
     # Finally, compute the off-resonance field and correct the EPI pair in
     # merged_image_for_topup_compute according to this field
-    corrected_4D_file, topup_out_base_name_file = \
-                                    topup_compute(merged_image_for_topup_compute_file, \
-                                                  topup_datain, \
-                                                  topup_config)
+    corrected_4D_file, \
+    topup_out_base_name_file, \
+    off_resonance_field_file = topup_compute(merged_image_for_topup_compute_file, \
+                                             topup_datain, \
+                                             topup_config)
                                     
     # Even though topup_compute removes the data for first and
     # last z slice, it doesn't remove the slices. 
@@ -828,13 +843,28 @@ def topup_pipeline(blip_down_file, blip_up_file):
                                         topup_pipeline.TOPUP_folder_name, \
                                         topup_pipeline.FLAIR_3D_NIFTI_folder_name)
 
+    # Also postprocess the off-resonance field file.
+    # Remove the first and last z slice that are remains of
+    # running TOPUP on input merged_image_for_topup_compute_file
+    # which had fist and last z slice duplicated.
+    off_resonance_field_file_postp = \
+    remove_first_and_last_slices_and_save(output_directory, \
+                                          extract_string_after_last_backslash(off_resonance_field_file))
+    
+    # Overwrite header of off_resonance_field_file_postp with that of blip_down_file_first_temp_window_moved
+    # in order to have the off-resonance field aling correctly with original files.
+    # Corresponding is also done for the final corrected DSC data inside topup_apply_pipeline.
+    # There, the header of blip_up_applytopup_postp_file is overwritten with that of blip_down_file (original DSC file)
+    copy_header(blip_down_file_first_temp_window_moved, off_resonance_field_file_postp)
+
     topup_pipeline.q.put(report)
     #"""
     
     # Lastly, run applytopup using topup_out_base_name_file
     # on all temporary windows (DSC-MRI with contrast bolus)
     # of positive phase encoded EPIs (blip up).
-    topup_apply_pipeline(blip_up_file, \
+    topup_apply_pipeline(off_resonance_field_file_postp, \
+                         blip_down_file, \
                 topup_out_base_name_file, \
                 topup_datain, \
                 output_directory, \
@@ -851,60 +881,59 @@ def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
     topup_pipeline.TOPUP_folder_name = TOPUP_folder_name
     topup_pipeline.EPI_NIFTI_applytopup_directory = EPI_NIFTI_applytopup_directory
 
-# TODO: Finish EPIC correction pipeline
-def epic_apply_pipeline(blip_up_nii_file, \
+def epic_apply_pipeline(blip_down_nii_file, \
                 displacement_mgz_file, \
                 EPIC_working_directory, \
                 EPI_NIFTI_directory, \
                 EPI_NIFTI_applyepic_directory):
-
-    # - convert and move blip-up (DSC)
+    
+    # - convert and move blip-down (DSC)
     #   file to correct epic_pipeline.EPI_NIFTI_applyepic_directory
     
     
-    # - get name of raw DSC (forward EPI, which is blip_up_nii_file)
+    # - get name of raw DSC (forward EPI, which is blip_down_nii_file)
     # - perform applyEpic on the forward EPI using the displacement field
-    #   save thre corrected DSC in corresponding EPI_NIFTI_applytopup_directory
+    #   save the corrected DSC in corresponding EPI_NIFTI_applytopup_directory
     # - convert the corrected DSC (.mgz) file into a .nii file
     
     
     # As is now, this function must be called within
     # the epic_pipeline function.
     
-    blip_up_nii_file_name = extract_string_after_last_backslash(blip_up_nii_file)
+    blip_down_nii_file_name = extract_string_after_last_backslash(blip_down_nii_file)
     
     # Determine the file path + file name for the 
     # copy destination of (the .nii) blip_up_nii_file .
     # Original file name kept.
-    blip_up_nii_file_copied = EPIC_working_directory + "/" + \
-                            blip_up_nii_file_name
+    blip_down_nii_file_copied = EPIC_working_directory + "/" + \
+                            blip_down_nii_file_name
     
     # Copy blip_up_nii_file to the corresponding 
     # TOPUP directory folder.
-    copy_file(blip_up_nii_file, blip_up_nii_file_copied)
+    copy_file(blip_down_nii_file, blip_down_nii_file_copied)
     
     # Convert blip_up_nii_file_copied to .mgz format
     # (in the same directory) and naming it 
     # blip_up_mgz_file_copied
-    blip_up_mgz_file_copied = convert_nii_to_mgz(blip_up_nii_file_copied)
+    blip_down_mgz_file_copied = convert_nii_to_mgz(blip_down_nii_file_copied)
     
     # Run applytopup
-    blip_up_applyepic_mgz_file = \
-                                epic_apply_forward(blip_up_mgz_file_copied, \
-                                            extract_string_after_last_backslash(blip_up_mgz_file_copied), \
+    blip_down_applyepic_mgz_file = \
+                                epic_apply_reverse(blip_down_mgz_file_copied, \
+                                            extract_string_after_last_backslash(blip_down_mgz_file_copied), \
                                             displacement_mgz_file, \
                                             EPIC_working_directory)
     
     # Convert blip_up_applyepic_mgz_file
     # to blip_up_applyepic_nii_file
-    blip_up_applyepic_nii_file = convert_mgz_to_nii(blip_up_applyepic_mgz_file)
+    blip_down_applyepic_nii_file = convert_mgz_to_nii(blip_down_applyepic_mgz_file)
     
     # Determine the final output directory for
     # saving the the applyepic .nii output file.
     # The string operations indexes away at both start and end of 
     # the blip_up_nii_file string.
     output_directory = EPI_NIFTI_applyepic_directory + \
-                    blip_up_nii_file[len(EPI_NIFTI_directory):-len(blip_up_nii_file_name)-1]
+                    blip_down_nii_file[len(EPI_NIFTI_directory):-len(blip_down_nii_file_name)-1]
     
     # Directory needs to exist from here.
     create_directory_if_not_exists(output_directory)
@@ -920,16 +949,29 @@ def epic_apply_pipeline(blip_up_nii_file, \
     
     
     # Determine final file name and location.
-    blip_up_applyepic_nii_file_name = \
-            extract_string_after_last_backslash(blip_up_applyepic_nii_file)
-    blip_up_applyepic_nii_file_copied = output_directory + "/" + \
-            blip_up_applyepic_nii_file_name
+    blip_down_applyepic_nii_file_name = \
+            extract_string_after_last_backslash(blip_down_applyepic_nii_file)
+    blip_down_applyepic_nii_file_copied = output_directory + "/" + \
+            blip_down_applyepic_nii_file_name
     
     # Finally, the blip_up_applyepic_nii_file
     # is copied to output_directory; file path + file name:
     # blip_up_applyepic_file_copied ,
     # (same file name as in EPIC_working_directory).
-    copy_file(blip_up_applyepic_nii_file, blip_up_applyepic_nii_file_copied)
+    copy_file(blip_down_applyepic_nii_file, blip_down_applyepic_nii_file_copied)
+    
+    # Similarily, copy the displacement file (.nii) version to the
+    # corresponding applyepic directory.
+    
+    # Determine final file name and location.
+    displacement_nii_file_name_copied = \
+            extract_string_after_last_backslash(displacement_mgz_file)[:-len(".mgz")] + "_" + \
+            determine_e1_or_e2(blip_down_nii_file) + ".nii"
+    displacement_nii_file_copied = output_directory + "/" + \
+            displacement_nii_file_name_copied
+    # Assuming displacement_nii_file exists from epic_pipeline
+    copy_file(displacement_mgz_file[:-len(".mgz")] + ".nii", displacement_nii_file_copied)
+
 
 def epic_pipeline(blip_down_file, blip_up_file):
     
@@ -981,7 +1023,11 @@ def epic_pipeline(blip_down_file, blip_up_file):
     epic_compute(blip_up_mgz_file_first_temp_window_moved, \
                  blip_down_mgz_file_first_temp_window_moved, \
                  output_directory)
-
+    
+    # Convert displacement file to NIFTI (more handy later)
+    _ = \
+            convert_mgz_to_nii(displacement_mgz_file)
+    
     # - convert forward and reverse corrected files to .nii files
     # - get names of the converted forward and reverse .nii files
     reverse_epi_corrected_nii_file = \
@@ -1021,7 +1067,7 @@ def epic_pipeline(blip_down_file, blip_up_file):
     # Lastly, run applyepic using displacement_mgz_file
     # on all temporary windows (DSC-MRI with contrast bolus)
     # of the positive/forward phase encoded EPI (blip_up_file).
-    epic_apply_pipeline(blip_up_file, \
+    epic_apply_pipeline(blip_down_file, \
                 displacement_mgz_file, \
                 output_directory, \
                 epic_pipeline.EPI_NIFTI_folder_name, \
