@@ -1265,3 +1265,12 @@ def make_directory_folders_EPIC_friendly(parent_path):
             if " " in dr:
                 shutil.move(root+"/"+dr, root+"/"+dr.replace(" ", "_"))
 
+def epi_hmc_fsfast_script_wrapper(EPI_nifti_folder):
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    command = 'bash scripts/EPI_hmc_fsfast.sh' + \
+                ' "' + EPI_nifti_folder + '"'
+    
+    run_shell_command(command)
+
+    print(process_msg_prefix + "epi_hmc_fsfast_script_wrapper: Completed head motion correction on EPI")

@@ -38,6 +38,7 @@ import multiprocessing as mp
 from search import get_blip_pairs
 from utils import create_directory_if_not_exists, \
                     dcm2niix_pipeline, \
+                    epi_hmc_fsfast_script_wrapper, \
                     topup_pipeline, \
                     topup_pipeline_init, \
                     epic_pipeline, \
@@ -45,6 +46,7 @@ from utils import create_directory_if_not_exists, \
                     report_listener, \
                     print_detected_data, \
                     make_directory_folders_EPIC_friendly
+                    
 
 def main():
 
@@ -60,6 +62,10 @@ def main():
     run_dcm2niix = True
     #run_dcm2niix = False
     
+    # EPI head motion correction
+    run_epi_hmc = True
+    #run_epi_hmc = False
+    
     run_topup = True
     #run_topup = False
     
@@ -67,11 +73,11 @@ def main():
     #run_epic = False
     
     # No spaces. Can be a date [yyyy_mm_dd]
-    run_output_directory_suffix = "2019_04_17_372114315_reverse_pair_order_3"
+    run_output_directory_suffix = "2019_04_21_whmc_fsfast"
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_372114315_no_spaces"
+    DICOM_directory = "../DICOM_no_spaces"
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
@@ -117,6 +123,10 @@ def main():
         # dcm2niix conversion end
         #"""
 
+    if run_epi_hmc:
+        # Head motion correction.
+        epi_hmc_fsfast_script_wrapper(EPI_NIFTI_directory)
+
     if run_topup or run_epic:
         # Detect EPI pairs in EPI_NIFTI_directory
         
@@ -142,7 +152,7 @@ def main():
         # Complete list of tuples with EPI pairs to correct for
         # magnetic susceptibility distortions
         EPI_pairs_to_correct = GE_blip_nii_pairs + SE_blip_nii_pairs
-    
+        
     if run_topup:
         # FSL TOPUP EPI correction section start
         
