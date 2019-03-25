@@ -214,9 +214,9 @@ def determine_output_directory(root_folder_name, \
     return output_directory
 
 def split_and_or_merge_first_temporary_window(output_directory, \
-                                    blip_down_file, \
-                                    blip_up_file, \
-                                    correction_method="topup"):
+                                              blip_down_file, \
+                                              blip_up_file, \
+                                              correction_method="topup"):
     
     # Splitting part
     blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
@@ -265,7 +265,7 @@ def split_and_or_merge_first_temporary_window(output_directory, \
         # prepared means that the file has added duplicate zmin and zmax slices
         blip_down_blip_up_temporary_window_file_name = \
             determine_merged_blips_file_name_topup(blip_down_file_name, \
-                                             blip_up_file_name)
+                                                   blip_up_file_name)
     
         # determine file name for merged file that is not prepared
         # for topup. 
@@ -276,8 +276,8 @@ def split_and_or_merge_first_temporary_window(output_directory, \
         # distortion correction.
         blip_down_blip_up_temporary_window_file_name_raw = \
             determine_merged_blips_file_name_topup(blip_down_file_name, \
-                                             blip_up_file_name, \
-                                             prep=False)
+                                                   blip_up_file_name, \
+                                                   prep=False)
     
         print("blip_down_blip_up_temporary_window_file_name: %s" % \
               blip_down_blip_up_temporary_window_file_name)
@@ -309,6 +309,8 @@ def split_and_or_merge_first_temporary_window(output_directory, \
                 blip_up_temporary_window_file
 
     elif correction_method == "epic":
+        # No merging is done and the function only returns the 
+        # two volumes after the split.
         return blip_down_temporary_window_file, \
                 blip_up_temporary_window_file
     else:
@@ -466,24 +468,31 @@ def compute_similarities(output_directory, \
         # corrected_blip_down_file amd corrected_blip_up_file
         # is changed after running the two following commands.
         copy_header(blip_down_window_file, corrected_blip_down_file)
+        
+        # Rename the file to note that header was overwritten.
+        # "_how" for Header-Over-Written.
+        move_file(corrected_blip_down_file, corrected_blip_down_file[:-len(".nii")] + "_how.nii")
+        
         copy_header(blip_up_window_file, corrected_blip_up_file)
         
-        # Find corresponding (already converted to NIFTI)
-        # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
-        # if it exists. Return "not found" elsewise.
-        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory[:-len("/e1")], \
-                                                                                       TOPUP_or_EPIC_folder_name, \
-                                                                                       FLAIR_3D_NIFTI_folder_name)
-    elif correction_method == "epic":
-        # Find corresponding (already converted to NIFTI)
-        # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
-        # if it exists. Return "not found" elsewise.
-        # EPIC-specific
-        # TAKE AWAY /e1 or /e2 from output_directory
-        # and TOPUP_or_EPIC_folder_name
-        flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory[:-len("/e1")], \
-                                                                                       TOPUP_or_EPIC_folder_name, \
-                                                                                       FLAIR_3D_NIFTI_folder_name)
+        # Rename the file to note that header was overwritten.
+        # "_how" for Header-Over-Written.
+        move_file(corrected_blip_up_file, corrected_blip_up_file[:-len(".nii")] + "_how.nii")
+        
+        # Update the file and file names accordingly
+        # "_how" for Header-Over-Written.
+        corrected_blip_down_file = corrected_4D_file[:-len(".nii")] + "_0000_how.nii"
+        corrected_blip_down_file_name = extract_string_after_last_backslash(corrected_blip_down_file)
+        corrected_blip_up_file = corrected_4D_file[:-len(".nii")] + "_0001_how.nii"
+        corrected_blip_up_file_name = extract_string_after_last_backslash(corrected_blip_up_file)
+        
+
+    # Find corresponding (already converted to NIFTI)
+    # FLAIR 3D image in FLAIR_3D_NIFTI_folder_name
+    # if it exists. Return "not found" elsewise.
+    flair_3d_file = find_corresponding_flair_3d_file_for_epi_pair_output_directory(output_directory[:-len("/e1")], \
+                                                                                   TOPUP_or_EPIC_folder_name, \
+                                                                                   FLAIR_3D_NIFTI_folder_name)
 
     flair_3d_file_name = extract_string_after_last_backslash(flair_3d_file)
     
@@ -666,8 +675,8 @@ def compute_similarities(output_directory, \
     # in the file
     data = [header, report]
     
-    for d in data:
-        print(d)
+    #for d in data:
+    #    print(d)
     
     report_name = corrected_4D_file[:-len(".nii")] + "_performance_metrics.txt"   
     
@@ -689,7 +698,7 @@ def print_detected_data(GE_pairs, SE_pairs):
 
 def copy_file(source_file, destination_file):
     # source_file and destination_file 
-    # need to be file path + file name
+    # need to be file path + "/" + file name
     command = 'cp -v "' + \
                 source_file + \
                 '" "' + \
@@ -697,13 +706,30 @@ def copy_file(source_file, destination_file):
                 '"'
     run_shell_command(command)
 
-def topup_apply_pipeline(off_resonance_field_file_postp, \
+def move_file(source_file, destination_file):
+    # source_file and destination_file 
+    # need to be file path + "/" + file name
+    command = 'mv "' + \
+                source_file + \
+                '" "' + \
+                destination_file + \
+                '"'
+    run_shell_command(command)
+
+def remove_file(file):
+    command = 'rm "' + \
+                file + \
+                '"'
+    run_shell_command(command)
+
+def topup_apply_pipeline(off_resonance_field_file, \
                          blip_down_file, \
-                topup_out_base_name_file, \
-                topup_datain, \
-                TOPUP_working_directory, \
-                EPI_NIFTI_directory, \
-                EPI_NIFTI_applytopup_directory):
+                         blip_down_file_first_temp_window_moved, \
+                         topup_out_base_name_file, \
+                         topup_datain, \
+                         TOPUP_working_directory, \
+                         EPI_NIFTI_directory, \
+                         EPI_NIFTI_applytopup_directory):
     
     # As is now, this function must be called within
     # the topup_pipeline function.
@@ -776,12 +802,29 @@ def topup_apply_pipeline(off_resonance_field_file_postp, \
     # to the corresponding applytopup directory.
     
     # Determine final file name and location.
-    off_resonance_field_postp_file_name = \
-            extract_string_after_last_backslash(off_resonance_field_file_postp)
-    off_resonance_field_postp_file_copied = output_directory + "/" + \
-            off_resonance_field_postp_file_name        
+    off_resonance_field_file_name = \
+            extract_string_after_last_backslash(off_resonance_field_file)
+    off_resonance_field_file_copied = output_directory + "/" + \
+            off_resonance_field_file_name        
     
-    copy_file(off_resonance_field_file_postp, off_resonance_field_postp_file_copied)
+    copy_file(off_resonance_field_file, off_resonance_field_file_copied)
+    
+    # Also postprocess the off-resonance field file.
+    # Remove the first and last z slice that are remains of
+    # running TOPUP on input merged_image_for_topup_compute_file
+    # which had fist and last z slice duplicated.
+    off_resonance_field_file_copied_postp = \
+    remove_first_and_last_slices_and_save(output_directory, \
+                                          extract_string_after_last_backslash(off_resonance_field_file_copied))
+    
+    # Overwrite header of off_resonance_field_file_copied_postp with that of blip_down_file_first_temp_window_moved
+    # in order to have the off-resonance field aling correctly with original files.
+    # Corresponding is also done for the final corrected DSC data inside topup_apply_pipeline.
+    # There, the header of blip_down_applytopup_postp_file is overwritten with that of blip_down_file (original DSC file).
+    copy_header(blip_down_file_first_temp_window_moved, off_resonance_field_file_copied_postp)
+    
+    # Remove the copied non-postprocessed off-resonance field file.
+    remove_file(off_resonance_field_file_copied)
 
 
 def topup_pipeline(blip_down_file, blip_up_file):
@@ -808,13 +851,15 @@ def topup_pipeline(blip_down_file, blip_up_file):
     
     create_directory_if_not_exists(output_directory)
     
-    
+    # Note: split_and_or_merge_first_temporary_window will also
+    # duplicate top and bottom z slice if correction_method='topup' .
     merged_image_for_topup_compute_file, \
     merged_image_file_raw, \
     blip_down_file_first_temp_window_moved, \
     blip_up_file_first_temp_window_moved = split_and_or_merge_first_temporary_window(output_directory, \
                                                                           blip_down_file , \
-                                                                          blip_up_file)    
+                                                                          blip_up_file, \
+                                                                          correction_method='topup')
     #"""
     topup_datain = "topup_config/aquisition_parameters.txt"
     topup_config = "topup_config/b02b0.cnf"
@@ -836,40 +881,29 @@ def topup_pipeline(blip_down_file, blip_up_file):
     corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_directory, \
                                                                     extract_string_after_last_backslash(corrected_4D_file))
     
+    # compute_similarities will also splitt corrected_4D_file_postp into
+    # blip down and blip up volume, but should not modify corrected_4D_file_postp .
     report = compute_similarities(output_directory, \
                                         blip_down_file_first_temp_window_moved, \
                                         blip_up_file_first_temp_window_moved, \
                                         corrected_4D_file_postp, \
                                         topup_pipeline.TOPUP_folder_name, \
                                         topup_pipeline.FLAIR_3D_NIFTI_folder_name)
-
-    # Also postprocess the off-resonance field file.
-    # Remove the first and last z slice that are remains of
-    # running TOPUP on input merged_image_for_topup_compute_file
-    # which had fist and last z slice duplicated.
-    off_resonance_field_file_postp = \
-    remove_first_and_last_slices_and_save(output_directory, \
-                                          extract_string_after_last_backslash(off_resonance_field_file))
     
-    # Overwrite header of off_resonance_field_file_postp with that of blip_down_file_first_temp_window_moved
-    # in order to have the off-resonance field aling correctly with original files.
-    # Corresponding is also done for the final corrected DSC data inside topup_apply_pipeline.
-    # There, the header of blip_up_applytopup_postp_file is overwritten with that of blip_down_file (original DSC file)
-    copy_header(blip_down_file_first_temp_window_moved, off_resonance_field_file_postp)
-
     topup_pipeline.q.put(report)
     #"""
     
     # Lastly, run applytopup using topup_out_base_name_file
     # on all temporary windows (DSC-MRI with contrast bolus)
     # of positive phase encoded EPIs (blip up).
-    topup_apply_pipeline(off_resonance_field_file_postp, \
+    topup_apply_pipeline(off_resonance_field_file, \
                          blip_down_file, \
-                topup_out_base_name_file, \
-                topup_datain, \
-                output_directory, \
-                topup_pipeline.EPI_NIFTI_folder_name, \
-                topup_pipeline.EPI_NIFTI_applytopup_directory)
+                         blip_down_file_first_temp_window_moved, \
+                         topup_out_base_name_file, \
+                         topup_datain, \
+                         output_directory, \
+                         topup_pipeline.EPI_NIFTI_folder_name, \
+                         topup_pipeline.EPI_NIFTI_applytopup_directory)
     
 def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
                         FLAIR_3D_NIFTI_folder_name,\
@@ -998,12 +1032,13 @@ def epic_pipeline(blip_down_file, blip_up_file):
     create_directory_if_not_exists(output_directory)
     
     # split_and_or_merge_first_temporary_window
-    # also used for EPIC 
+    # also used with correction_method="epic" only
+    # does the splitting part.
     blip_down_file_first_temp_window_moved, \
     blip_up_file_first_temp_window_moved = split_and_or_merge_first_temporary_window(output_directory, \
                                                                           blip_down_file , \
                                                                           blip_up_file, \
-                                                                          "epic")    
+                                                                          correction_method="epic")    
     # Blip Down is reverse - negative phase encoded EPI
     # Blip Up is forward - positive phase encoded EPI
     # 
@@ -1274,3 +1309,36 @@ def epi_hmc_fsfast_script_wrapper(EPI_nifti_folder):
     run_shell_command(command)
 
     print(process_msg_prefix + "epi_hmc_fsfast_script_wrapper: Completed head motion correction on EPI")
+
+def epi_hmc_elastix_script_wrapper(EPI_nifti_folder):
+    # Note: This script is very slow.
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    command = 'bash scripts/EPI_hmc_elastix.sh' + \
+                ' "' + EPI_nifti_folder + '"'
+    
+    run_shell_command(command)
+
+    print(process_msg_prefix + "epi_hmc_elastix_script_wrapper: Completed head motion correction on EPI")
+    
+def epi_hmc_nICE_prepare_dir_script_wrapper(EPI_nifti_folder):
+    # Note: This script is very slow.
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    command = 'bash scripts/EPI_hmc_nICE_prepare_dir.sh' + \
+                ' "' + EPI_nifti_folder + '"'
+    
+    run_shell_command(command)
+
+    print(process_msg_prefix + "epi_hmc_nICE_prepare_dir_script_wrapper: Completed prepare dir for nICE (head) Motion correction")
+    
+def epi_hmc_nICE_copy_back_script_wrapper(EPI_nifti_folder):
+    # Note: This script is very slow.
+    process_msg_prefix = "PID %i: " % os.getpid()
+
+    command = 'bash scripts/EPI_hmc_nICE_prepare_copy_back.sh' + \
+                ' "' + EPI_nifti_folder + '"'
+    
+    run_shell_command(command)
+
+    print(process_msg_prefix + "epi_hmc_nICE_copy_back_script_wrapper: Completed copy back (overwrite) for nICE (head) Motion correction")

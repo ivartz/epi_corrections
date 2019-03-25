@@ -39,6 +39,9 @@ from search import get_blip_pairs
 from utils import create_directory_if_not_exists, \
                     dcm2niix_pipeline, \
                     epi_hmc_fsfast_script_wrapper, \
+                    epi_hmc_elastix_script_wrapper, \
+                    epi_hmc_nICE_prepare_dir_script_wrapper, \
+                    epi_hmc_nICE_copy_back_script_wrapper, \
                     topup_pipeline, \
                     topup_pipeline_init, \
                     epic_pipeline, \
@@ -46,7 +49,7 @@ from utils import create_directory_if_not_exists, \
                     report_listener, \
                     print_detected_data, \
                     make_directory_folders_EPIC_friendly
-                    
+import sys
 
 def main():
 
@@ -59,12 +62,15 @@ def main():
     # Will modify the folder and file names in DICOM_directory
     replace_spaces_with__ = False
     
-    run_dcm2niix = True
-    #run_dcm2niix = False
+    #run_dcm2niix = True
+    run_dcm2niix = False
     
     # EPI head motion correction
-    run_epi_hmc = True
-    #run_epi_hmc = False
+    #run_epi_hmc = True
+    run_epi_hmc = False
+    
+    #epi_nICE_hmc_not_done = True
+    epi_nICE_hmc_not_done = False
     
     run_topup = True
     #run_topup = False
@@ -73,11 +79,11 @@ def main():
     #run_epic = False
     
     # No spaces. Can be a date [yyyy_mm_dd]
-    run_output_directory_suffix = "2019_04_21_whmc_fsfast"
+    run_output_directory_suffix = "2019_04_25_372114315"
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_no_spaces"
+    DICOM_directory = "../DICOM_372114315_no_spaces"
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
@@ -125,7 +131,32 @@ def main():
 
     if run_epi_hmc:
         # Head motion correction.
-        epi_hmc_fsfast_script_wrapper(EPI_NIFTI_directory)
+        
+        # This is not recommended for DSC, since corrects to the mean of the entire dynamic series.
+        #epi_hmc_fsfast_script_wrapper(EPI_NIFTI_directory)
+        
+        # Better for DSC since it coregisters to the first dynamic image.
+        #epi_hmc_elastix_script_wrapper(EPI_NIFTI_directory)
+        
+        # The most correct head motion correction is NordicICE Barch head motion correction.
+        # This coregisters to the mean baseline image, which is selected to be the mean
+        # of the dynamuc images __before__ the start of the contrast bolus passage.
+        # (suited for perfusion data).
+        if epi_nICE_hmc_not_done:
+            epi_hmc_nICE_prepare_dir_script_wrapper(EPI_NIFTI_directory)
+            print("----------------")
+            print("----------------")
+            print("Run NordicICE (head) Motion correction Batch Analysis on the nICE prepared NIFTI EPI data: " + \
+                  corrections_base_directory + "/" + "EPI_for_nICE_batch_head_motion_correction")
+            print("----------------")
+            print("----------------")
+            print()
+            
+            print(",then set epi_nICE_hmc_not_done and run_dcm2niix to False and re-run.")
+            print("Exiting pipeline.")
+            sys.exit(0)
+        elif not epi_nICE_hmc_not_done:
+            epi_hmc_nICE_copy_back_script_wrapper(EPI_NIFTI_directory)
 
     if run_topup or run_epic:
         # Detect EPI pairs in EPI_NIFTI_directory
