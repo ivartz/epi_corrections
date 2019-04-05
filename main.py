@@ -66,8 +66,8 @@ def main():
     run_dcm2niix = False
     
     # EPI head motion correction
-    #run_epi_hmc = True
-    run_epi_hmc = False
+    run_epi_hmc = True
+    #run_epi_hmc = False
     
     #epi_nICE_hmc_not_done = True
     epi_nICE_hmc_not_done = False
@@ -79,11 +79,11 @@ def main():
     #run_epic = False
     
     # No spaces. Can be a date [yyyy_mm_dd]
-    run_output_directory_suffix = "2019_04_25_372114315"
+    run_output_directory_suffix = "2019_04_25"
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_372114315_no_spaces"
+    DICOM_directory = "../DICOM_no_spaces"
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
