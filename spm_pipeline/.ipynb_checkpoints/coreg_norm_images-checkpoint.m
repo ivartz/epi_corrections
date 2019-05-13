@@ -35,11 +35,11 @@ run_everything = true;
 % perfusion maps in MNI space
 
 disp("----");
-%coreg_norm_pipeline(run_everything, EPI_struct_array, [], FLAIR_3D_struct_array, 'EPI_raw_DSC');
+coreg_norm_pipeline(run_everything, EPI_struct_array, [], FLAIR_3D_struct_array, 'EPI_raw_DSC');
 disp("----");
 coreg_norm_pipeline(run_everything, EPI_applytopup_struct_array, EPI_applytopup_orf_struct_array, FLAIR_3D_struct_array, 'EPI_applytopup');
 disp("----");
-%coreg_norm_pipeline(run_everything, EPI_applyepic_struct_array, EPI_applyepic_df_struct_array, FLAIR_3D_struct_array, 'EPI_applyepic');
+coreg_norm_pipeline(run_everything, EPI_applyepic_struct_array, EPI_applyepic_df_struct_array, FLAIR_3D_struct_array, 'EPI_applyepic');
 disp("----");
 
 % Todo:

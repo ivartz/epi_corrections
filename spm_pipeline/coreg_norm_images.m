@@ -25,8 +25,8 @@ valid = all(cell2mat(valid_check)');
      return;
  end
  
-%run_everything = true;
-run_everything = false;
+run_everything = true;
+%run_everything = false;
  
 % Low res -> High res coreg est reslice : out: upsampled first dynamic
 % DSC
@@ -34,11 +34,13 @@ run_everything = false;
 % Normalize write : out: DSC first dynamic + topup/epic field +
 % perfusion maps in MNI space
 
+disp("----");
 coreg_norm_pipeline(run_everything, EPI_struct_array, [], FLAIR_3D_struct_array, 'EPI_raw_DSC');
 disp("----");
 coreg_norm_pipeline(run_everything, EPI_applytopup_struct_array, EPI_applytopup_orf_struct_array, FLAIR_3D_struct_array, 'EPI_applytopup');
 disp("----");
 coreg_norm_pipeline(run_everything, EPI_applyepic_struct_array, EPI_applyepic_df_struct_array, FLAIR_3D_struct_array, 'EPI_applyepic');
+disp("----");
 
 % Todo:
 % Log rank of roi histograms
