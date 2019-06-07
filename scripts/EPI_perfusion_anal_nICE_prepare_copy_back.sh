@@ -9,7 +9,7 @@ cd "$epi_root_folder"
 
 cd ..
 
-# Now we are shure that we are at the correct location.
+# Now we are sure that we are at the correct location.
 
 epi_perf_root_folder="EPI_for_nICE_batch_perfusion_analysis"
 
@@ -85,7 +85,7 @@ run_section () {
 
 
     # Make the final perfusion output folder
-    mkdir_command="mkdir $DSC_orig_dir/${DSC_orig_nii_file_name%.nii}_perf"
+    mkdir_command="mkdir -p $DSC_orig_dir/${DSC_orig_nii_file_name%.nii}_perf"
 
     #echo $mkdir_command
     eval $mkdir_command

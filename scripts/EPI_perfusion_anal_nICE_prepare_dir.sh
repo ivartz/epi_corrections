@@ -56,7 +56,7 @@ cd ..
 
 # Now we are in at the right location for mkdir.
 
-mkdir_command="mkdir $output_root_folder"
+mkdir_command="mkdir -p $output_root_folder"
 
 eval $mkdir_command
 

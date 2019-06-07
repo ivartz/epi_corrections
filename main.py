@@ -7,7 +7,7 @@ Created on Mon Nov  5 13:26:27 2018
 
 Check the GitHub page for dependencies.
 
-Recommended standalone run:
+Recommended standalone run (TODO: Outdated, using argparse):
 mkdir ../epi_corrections_out_yyyy_mm_dd && python3 main.py 2>&1 | tee ../epi_corrections_out_yyyy_mm_dd/pipeline_report_yyyy_mm_dd.txt
 
 for instance
@@ -49,9 +49,11 @@ from utils import create_directory_if_not_exists, \
                     report_listener, \
                     print_detected_data, \
                     make_directory_folders_EPIC_friendly
-import sys
+import sys, argparse
+from os import getcwd
+from os.path import relpath, abspath
 
-def main():
+def main(args):
 
     # NB! replace_spaces_with__ = True will
     # modify the folder and file names
@@ -60,30 +62,38 @@ def main():
     # any spaces in file names and paths.
     # Need to be True for EPIC to work. 
     # Will modify the folder and file names in DICOM_directory
-    replace_spaces_with__ = False
+    #replace_spaces_with__ = False
+    replace_spaces_with__ = args.replace_spaces_with__
     
     #run_dcm2niix = True
-    run_dcm2niix = False
+    #run_dcm2niix = False
+    run_dcm2niix = args.run_dcm2niix
     
     # EPI head motion correction
-    run_epi_hmc = True
-    #run_epi_hmc = False
+    #epi_hmc = True
+    #epi_hmc = False
+    epi_hmc = args.epi_hmc
     
     #epi_nICE_hmc_not_done = True
-    epi_nICE_hmc_not_done = False
+    #epi_nICE_hmc_not_done = False
+    epi_nICE_hmc_not_done = args.epi_nICE_hmc_not_done
     
-    run_topup = True
+    #run_topup = True
     #run_topup = False
+    run_topup = args.run_topup
     
-    run_epic = True
+    #run_epic = True
     #run_epic = False
+    run_epic = args.run_epic
     
     # No spaces. Can be a date [yyyy_mm_dd]
-    run_output_directory_suffix = "2019_04_25"
+    #output_directory_suffix = "2019_04_25"
+    output_directory_suffix = args.output_directory_suffix
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
-    DICOM_directory = "../DICOM_no_spaces"
+    #DICOM_directory = "../DICOM_no_spaces"
+    DICOM_directory = args.DICOM_directory
     
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
@@ -96,8 +106,15 @@ def main():
     # (from mri_robust_register failure)
     # has been observed in the epi_corrections
     # repository folder.
+    # The output folder is one directory up from DICOM_directory.
+    # corrections_base_directory is a relative path from
+    # the location of main.py to the output folder.
+    
     corrections_base_directory = "../epi_corrections_out_" + \
-                                            run_output_directory_suffix
+                                        output_directory_suffix
+    
+    #corrections_base_directory = relpath(abspath(DICOM_directory + "/.."), getcwd()) + \
+    #    "/epi_corrections_out_" + output_directory_suffix
 
     # Folder for EPI NIFTI pairs converted by
     # dcm2niix script (the script's output directory)
@@ -129,7 +146,7 @@ def main():
         # dcm2niix conversion end
         #"""
 
-    if run_epi_hmc:
+    if epi_hmc:
         # Head motion correction.
         
         # This is not recommended for DSC, since corrects to the mean of the entire dynamic series.
@@ -241,7 +258,7 @@ def main():
         q = manager.Queue()
         
         # Multiprocessing pool of 8 workers (= number of physical CPU cores)
-        p = mp.Pool(8, epic_pipeline_init, \
+        p = mp.Pool(mp.cpu_count(), epic_pipeline_init, \
                     initargs=(q, EPI_NIFTI_directory, \
                               FLAIR_3D_NIFTI_directory, \
                               EPIC_directory, \
@@ -260,4 +277,30 @@ def main():
         # EPIC EPI correction section end
 
 if __name__ == '__main__':
-    main()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--DICOM_directory', \
+                        default="../DICOM_372114315_no_spaces", \
+                        help="The relative path (from the location of main.py) to the DICOM folder containing the .dcm images")
+    parser.add_argument('--output_directory_suffix', \
+                        default="2019_06_05_372114315", \
+                        help="The suffix of the output directory. Output directory will be ../epi_corrections_out_ + output_directory_suffix (relative path from the location of main.py")
+    parser.add_argument('--replace_spaces_with__', \
+                        action='store_true', \
+                        help="Replace all spaces in folder and file names in DICOM_directory (recursive) with underscore (_). Necessary for EPIC")
+    parser.add_argument('--run_dcm2niix', \
+                        action='store_true', \
+                        help="Convert images in DICOM_directory with folder names containing either of the keywords epi or flair_3d, into separate NIFTI folders. A necessary step")
+    parser.add_argument('--epi_hmc', \
+                        action='store_true', \
+                        help="Head Motion Correction functionality. See main.py and the notebook correction_assessment_part_1.ipynb")
+    parser.add_argument('--epi_nICE_hmc_not_done', \
+                        action='store_true', \
+                        help="Head Motion Correction functionality. See main.py and the notebook correction_assessment_part_1.ipynb")
+    parser.add_argument('--run_topup', \
+                        action='store_true', \
+                        help="FSL TOPUP EPI magnetic susceptibility distortion correction")
+    parser.add_argument('--run_epic', \
+                        action='store_true', \
+                        help="EPIC EPI magnetic susceptibility distortion correction")    
+    args=parser.parse_args()
+    main(args)

@@ -12,7 +12,9 @@ hist_num_cells = 60;
 % epi_corrections_out_dir = ...
 %     '/media/ivar/Shared/sf-virtualbox/IVS EPI Basline/epi_corrections_out_2019_04_25_372114315';
 
-% Assuming this exists.
+% Assuming this exists. This is the maximum probability tissue labels nifti
+% file in <spm_dir>/tpm/labels_Neuromorphometrics.nii (MNI), but resliced
+% to same voxel resolution as the DSC data using SPM (still MNI space).
 regions_file_string = ...
     strcat(epi_corrections_out_dir, '/', 'rlabels_Neuromorphometrics.nii');
 
