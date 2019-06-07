@@ -2,7 +2,9 @@
 Python script for pipeline implementation for correction of 
 magnetic susceptibility induced (geometric and intensity) 
 artefacts from off-resonance field in EPI MRI images. 
-Using FSL topup and EPIC.
+Using FSL TOPUP and EPIC.
+
+## Methods
 
 See reports/PosterHovden.pdf (NFMF MedFys 2019).
 
@@ -13,12 +15,49 @@ phase encoding in the k-space EPI encoding
 
 For a correction of a pair of EPI images (blip-up, blip-down), 
 the different type of distortion based on phase encoding 
-directions are used to to make an off-resonance field.
+directions are used to to make an off-resonance field (FSL TOPUP
+or a displacement field (EPIC)).
 
-The off-resonance field is then used to "unwrap" each EPI 
+In each of the medhods, the field is then used to "unwrap" each EPI 
 image in the pair, aiming the two to be identical.
 
-Dependencies:
+## Folder structure
+
+epi_corrections requires the following folder structure:
+
+    DICOM_directory/
+    epi_corrections/
+    ├── docker/
+    │   ├── generate_dockerfile.sh
+    │   ├── build.sh
+    │   ├── run.sh
+    epi_corrections_out_*
+
+where epi_corrections is the directory from
+```bash
+git clone https://github.com/ivartz/epi_corrections
+```
+and DICOM_directory is a directory containing .dcm files from various sequences, each sequence in a separate folder.
+The program creates the folder epi_corrections_out_* with similar folder structure as in DICOM_folder.
+
+## Running in Docker environment
+
+Make sure docker (CE) is installed before running the following commands:
+```bash
+git clone https://github.com/ivartz/epi_corrections
+cd epi_corrections/docker
+bash generate_dockerfile.sh
+bash build.sh
+cd ../../
+bash epi_corrections/docker/run.sh
+```
+starts a docker environment with JupyterLab in the top directory specified in the folder structure.
+Note that this will create the hidden folders .ipynb_checkpoints, .ipython, .jupyter, .local as well as the folder matlab
+in this top directory.
+Access JupyterLab in a browser from the provided URL in the terminal output.
+From JupyterLab, open epi_corrections/notebooks/corretion_assessment_part_1.ipynb and follow the interactive guide.
+
+## Standalone dependencies
 
 - FSL 6.0.0 : For topup and various tools used
 - EPIC (included in the folder epic_src)
@@ -35,12 +74,12 @@ modification does not have an effect on the .dcm -> .nii conversion
 than with the nonmodified version)).
 Included under scripts along with wrapper script : For DICOM (.dcm) to NIFTI (.nii) file conversion
 
-References:
+## References
 
-FSL topup:
+__FSL topup__:
 
 Andersson, J. L. R., Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage 20, 870–888 (2003).
 
-EPIC:
+__EPIC__:
 
 Holland, D., Kuperman, J. M. & Dale, A. M. Efficient Correction of Inhomogeneous Static Magnetic Field-Induced Distortion in Echo Planar Imaging. Neuroimage 50, 175 (2010).
