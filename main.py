@@ -175,7 +175,7 @@ def main(args):
         elif not epi_nICE_hmc_not_done:
             epi_hmc_nICE_copy_back_script_wrapper(EPI_NIFTI_directory)
 
-    if run_topup or run_epic:
+    if run_topup or run_epic or args.print_epi_paris:
         # Detect EPI pairs in EPI_NIFTI_directory
         
         # Important assumptions:
@@ -296,6 +296,9 @@ if __name__ == '__main__':
     parser.add_argument('--epi_nICE_hmc_not_done', \
                         action='store_true', \
                         help="Head Motion Correction functionality. See main.py and the notebook correction_assessment_part_1.ipynb")
+    parser.add_argument('--print_epi_pairs', \
+                        action='store_true', \
+                        help="Print detected blip-down, blip-up EPI pairs that FSL TOPUP and EPIC will use")
     parser.add_argument('--run_topup', \
                         action='store_true', \
                         help="FSL TOPUP EPI magnetic susceptibility distortion correction")
