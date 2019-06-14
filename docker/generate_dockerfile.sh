@@ -20,7 +20,7 @@ docker run kaczmarj/neurodocker:0.5.0 generate docker \
     --pkg-manager=apt \
     --install htop vim tmux rsync nload \
     --freesurfer version=6.0.0-min \
-    --copy freesurfer/license.txt /opt/freesurfer/license.txt \
+    --copy freesurfer/license.txt /opt/freesurfer-6.0.0-min/license.txt \
     --fsl version=5.0.11 \
     --matlabmcr version=2018a \
     --run "groupadd $(id -g $USER)" \
