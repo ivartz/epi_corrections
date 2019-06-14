@@ -31,6 +31,7 @@ epi_corrections requires the following folder structure:
     │   ├── generate_dockerfile.sh
     │   ├── build.sh
     │   ├── run.sh
+    │   ├── freesurfer
     epi_corrections_out_*
 
 where epi_corrections is the directory from
@@ -41,10 +42,16 @@ and DICOM_directory is a directory containing .dcm files from various sequences,
 The program creates the folder epi_corrections_out_* with similar folder structure as in DICOM_folder.
 
 ## Running in Docker environment
+```bash
+git clone https://github.com/ivartz/epi_corrections
+```
+Register on https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file.
+Store the license file accordingly in:
+
+    epi_corrections/docker/freesurfer/license.txt
 
 Make sure docker (CE) is installed before running the following commands:
 ```bash
-git clone https://github.com/ivartz/epi_corrections
 cd epi_corrections/docker
 bash generate_dockerfile.sh
 bash build.sh

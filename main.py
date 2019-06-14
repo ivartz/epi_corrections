@@ -219,7 +219,7 @@ def main(args):
         q = manager.Queue()
         
         # Multiprocessing pool of 8 workers (= number of physical CPU cores)
-        p = mp.Pool(8, topup_pipeline_init, \
+        p = mp.Pool(mp.cpu_count(), topup_pipeline_init, \
                     initargs=(q, EPI_NIFTI_directory, \
                               FLAIR_3D_NIFTI_directory, \
                               TOPUP_directory, \

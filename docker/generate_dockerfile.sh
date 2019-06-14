@@ -4,6 +4,8 @@
 # https://github.com/kaczmarj/neurodocker/blob/master/examples/conda_python/generate.sh
 # https://miykael.github.io/nipype_tutorial/notebooks/introduction_neurodocker.html
 
+# A FreeSurfer license.txt needs to exist in freesurfer/
+
 # The two run commands are used instead of only --user $USER
 # in order to create a non-root user with equal 
 # user name, user id and group id as the host system.
@@ -18,6 +20,7 @@ docker run kaczmarj/neurodocker:0.5.0 generate docker \
     --pkg-manager=apt \
     --install htop vim tmux rsync nload \
     --freesurfer version=6.0.0-min \
+    --copy freesurfer/license.txt /opt/freesurfer/license.txt \
     --fsl version=5.0.11 \
     --matlabmcr version=2018a \
     --run "groupadd $(id -g $USER)" \
@@ -26,7 +29,7 @@ docker run kaczmarj/neurodocker:0.5.0 generate docker \
     --miniconda \
         create_env="epi_corrections" \
         activate=true \
-        conda_install="python=3.6 jupyter jupyterlab jupyter_contrib_nbextensions nipype" \
+        conda_install="python=3.6 jupyter jupyterlab jupyter_contrib_nbextensions nipy nipype scipy=1.2.0" \
     --run 'mkdir -p ~/.jupyter && echo c.NotebookApp.ip = \"0.0.0.0\" > ~/.jupyter/jupyter_notebook_config.py' \
     --workdir /home/$USER \
     --cmd jupyter-lab > Dockerfile
