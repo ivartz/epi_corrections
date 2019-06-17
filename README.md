@@ -46,7 +46,7 @@ The program creates the folder epi_corrections_out_* with similar folder structu
 
 ## Running in Docker environment
 ```bash
-- git clone https://github.com/ivartz/epi_corrections
+git clone https://github.com/ivartz/epi_corrections
 ```
 - Register on https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file. Place the license at
 
