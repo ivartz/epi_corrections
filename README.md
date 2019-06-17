@@ -48,11 +48,11 @@ The program creates the folder epi_corrections_out_* with similar folder structu
 ```bash
 git clone https://github.com/ivartz/epi_corrections
 ```
-- Register on https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file. Place the license at
+- Register at https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file. Place the license at
 
     epi_corrections/docker/conf/freesurfer/license.txt
 
-- Register at Intel for receiving a Intel Parallel Studio XE 2019 Update 1 license at https://software.intel.com/en-us/parallel-studio-xe/choose-download/free-trial-cluster-linux-fortran . After creating a user and logging in to their site, go to the serial numbers tab at the Products page at https://registrationcenter.intel.com/en/products/ to download the license file associated with the serial number for Intel® Parallel Studio XE Cluster Edition for Linux . After downloading the license file, rename it to license.lic and place it at 
+- Register at Intel for receiving a Intel Parallel Studio XE 2019 Update 1 license at https://software.intel.com/en-us/parallel-studio-xe/choose-download/free-trial-cluster-linux-fortran . After creating a user and logging in at the Intel webpage, go to the serial numbers tab at the Products page at https://registrationcenter.intel.com/en/products/ to download the license file associated with the serial number for Intel® Parallel Studio XE Cluster Edition for Linux . After downloading the license file, rename it to license.lic and place it at 
 
     epi_corrections/docker/conf/intel/license.lic
 
