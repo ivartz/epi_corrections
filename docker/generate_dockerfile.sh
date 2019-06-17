@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Inspired from:
-# https://github.com/kaczmarj/neurodocker/blob/master/examples/conda_python/generate.sh
+# https://github.com/kaczmarj/neurodocker/blob/master/ex /tmp/icc-config.cfgenerate.sh
 # https://miykael.github.io/nipype_tutorial/notebooks/introduction_neurodocker.html
 
 # A FreeSurfer license.txt needs to exist in freesurfer/
@@ -16,13 +16,24 @@
 # jupyter lab / notebook saving problems on mounted volumes.
 
 docker run kaczmarj/neurodocker:0.5.0 generate docker \
-    --base=neurodebian:stretch-non-free \
+    --base=ubuntu:16.04 \
     --pkg-manager=apt \
-    --install htop vim tmux rsync nload \
+    --install bzip2 ca-certificates curl git cpio build-essential wget libfftw3-dev procps apt-utils \
     --freesurfer version=6.0.0-min \
-    --copy freesurfer/license.txt /opt/freesurfer-6.0.0-min/license.txt \
+    --copy conf/freesurfer/license.txt /opt/freesurfer-6.0.0-min/license.txt \
     --fsl version=5.0.11 \
-    --matlabmcr version=2018a \
+    --spm12 version=r7219 \
+    --copy conf/intel/config.cfg /tmp/icc-config.cfg \
+    --copy conf/intel/license.lic /tmp/icc-license.lic \
+    --run 'cd /tmp && \
+    wget -O icc.tgz http://registrationcenter-download.intel.com/akdlm/irc_nas/tec/14850/parallel_studio_xe_2019_update1_cluster_edition_online.tgz && \
+    tar -xvzf icc.tgz && \
+    cd /tmp/parallel_studio_xe_* && \
+    bash ./install.sh --silent=/tmp/icc-config.cfg && \
+    cd /tmp && \
+    rm -rf parallel_studio_xe_* icc.tgz && \
+    rm /tmp/icc-config.cfg' \
+    --install less htop vim tmux rsync nload \
     --run "groupadd $(id -g $USER)" \
     --run "test "'"$(getent passwd '$USER')"'" || useradd -u $(id -u $USER) -g $(id -g $USER) --create-home --shell /bin/bash $USER" \
     --user $USER \

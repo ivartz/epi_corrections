@@ -31,7 +31,10 @@ epi_corrections requires the following folder structure:
     │   ├── generate_dockerfile.sh
     │   ├── build.sh
     │   ├── run.sh
-    │   ├── freesurfer
+    │   ├── conf/
+    .
+    .
+    .
     epi_corrections_out_*
 
 where epi_corrections is the directory from
@@ -43,14 +46,17 @@ The program creates the folder epi_corrections_out_* with similar folder structu
 
 ## Running in Docker environment
 ```bash
-git clone https://github.com/ivartz/epi_corrections
+- git clone https://github.com/ivartz/epi_corrections
 ```
-Register on https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file.
-Store the license file accordingly in:
+- Register on https://surfer.nmr.mgh.harvard.edu/fswiki/License to get a FreeSurfer License file. Place the license at
 
-    epi_corrections/docker/freesurfer/license.txt
+    epi_corrections/docker/conf/freesurfer/license.txt
 
-Make sure docker (CE) is installed before running the following commands:
+- Register at Intel for receiving an Intel Parallel Studio XE 2019 Update 1 license at https://software.intel.com/en-us/parallel-studio-xe/choose-download/free-trial-cluster-linux-fortran . After creating a user and logging in to their site, go to the serial numbers tab at the Products page at https://registrationcenter.intel.com/en/products/ to download the license file associated with the serial number for Intel® Parallel Studio XE Cluster Edition for Linux . After downloading the license file, rename it to license.lic and place it at 
+
+    epi_corrections/docker/conf/intel/license.lic
+
+- Make sure docker (CE) is installed before running the following commands:
 ```bash
 cd epi_corrections/docker
 bash generate_dockerfile.sh
@@ -58,18 +64,20 @@ bash build.sh
 cd ../../
 bash epi_corrections/docker/run.sh
 ```
-starts a docker environment with JupyterLab in the top directory specified in the folder structure.
+This will start a docker environment with JupyterLab in the top directory specified in the folder structure.
 Note that this will create the hidden folders .ipynb_checkpoints, .ipython, .jupyter, .local as well as the folder matlab
 in this top directory.
 Access JupyterLab in a browser from the provided URL in the terminal output.
 From JupyterLab, open epi_corrections/notebooks/corretion_assessment_part_1.ipynb and follow the interactive guide.
 
-## Standalone dependencies
+FreeSurfer's mri_robust_register, FSL TOPUP and EPIC should run fine with the precompiled binaries on a recent intel CPU. Instruction for (re-)compilating EPIC can be found in epic_src .
+
+## Dependencies for running without docker
 
 - FSL 6.0.0 : For topup and various tools used
-- EPIC (included in the folder epic_src)
-- freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register
-- nipype : for similarity metrics
+- EPIC (included in the folder epic_src). See epic_src for a separate README.md for EPIC dependencies for compilation.
+- freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register.
+- nipy, nipype : for similarity metrics.
 - dcm2niix version v1.0.20181125  GCC7.3.0 (64-bit Linux) 
 modified by Oliver M. Geier to not reorient the scan to the 
 scanner's RPI coordinate system (so that the orientation of .nii 
@@ -79,7 +87,7 @@ MRI scanner RPI corrdinate system during the scan. If the patient's orientation
 was correctly aligned with the mri machine coordinate system, then this
 modification does not have an effect on the .dcm -> .nii conversion
 than with the nonmodified version)).
-Included under scripts along with wrapper script : For DICOM (.dcm) to NIFTI (.nii) file conversion
+Included under scripts along with wrapper script : For DICOM (.dcm) to NIFTI (.nii) file conversion.
 
 ## References
 

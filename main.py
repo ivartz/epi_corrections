@@ -175,7 +175,7 @@ def main(args):
         elif not epi_nICE_hmc_not_done:
             epi_hmc_nICE_copy_back_script_wrapper(EPI_NIFTI_directory)
 
-    if run_topup or run_epic or args.print_epi_paris:
+    if run_topup or run_epic or args.print_epi_pairs:
         # Detect EPI pairs in EPI_NIFTI_directory
         
         # Important assumptions:

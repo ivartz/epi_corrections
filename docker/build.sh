@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build --tag=epi_corrections_docker .
+docker build --network=host --tag=epi_corrections_docker .

@@ -11,7 +11,7 @@
 
 # This command is only required for compilation and must be run one time
 # before compilation. It is part of the compilation steps in README.md
-source /opt/intel/parallel_studio_xe_2019.1.053/psxevars.sh
+source /opt/intel/parallel_studio_xe_2019/psxevars.sh
 
 # These commands enable the compiled program to load
 # ctxsrc shared objects at run-time through adding the 
