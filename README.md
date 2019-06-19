@@ -69,7 +69,7 @@ bash epi_corrections/docker/run.sh
 This will start a docker environment with JupyterLab in the top directory specified in the folder structure.
 
 Note that this might create the hidden folders .ipynb_checkpoints, .ipython, .python_history, .bash_history, .jupyter, .local, .config as well as the folder matlab
-in this top directory. These folders can be removed by running (from top level directory)
+in this top directory. These folders can later be removed by running (from top level directory)
 ```bash
 bash epi_corrections/docker/clean.sh
 ```
