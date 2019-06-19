@@ -96,9 +96,10 @@ was correctly aligned with the mri machine coordinate system, then this
 modification does not have an effect on the .dcm -> .nii conversion
 than with the nonmodified version)).
 Included under scripts along with wrapper script : For DICOM (.dcm) to NIFTI (.nii) file conversion.
-- Matlab r2018b .
-- spm12 .
-- (recommended) Anaconda distribution for Python 3 .
+- (optional) Nordic ICE 4.x : For running Head Motion Corrections and Perfusion Analysis.
+- (optional) Matlab r2018b . : For analysing TOPUP and EPIC impacts in MNI space.
+- (optional) spm12 . : --"--
+- (optional) Anaconda distribution for Python 3 . : For running the remaining notebooks.
 
 ## References
 
