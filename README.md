@@ -32,6 +32,7 @@ epi_corrections requires the following folder structure:
     │   ├── build.sh
     │   ├── run.sh
     │   ├── clean.sh
+    │   ├── rm-img.sh
     │   ├── rm-unused-imgs.sh
     │   ├── conf/
     .
