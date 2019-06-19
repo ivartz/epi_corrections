@@ -4,8 +4,6 @@
 # https://github.com/kaczmarj/neurodocker/blob/master/ex /tmp/icc-config.cfgenerate.sh
 # https://miykael.github.io/nipype_tutorial/notebooks/introduction_neurodocker.html
 
-# A FreeSurfer license.txt needs to exist in freesurfer/
-
 # The two run commands are used instead of only --user $USER
 # in order to create a non-root user with equal 
 # user name, user id and group id as the host system.
