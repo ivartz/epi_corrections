@@ -15,8 +15,8 @@ phase encoding in the k-space EPI encoding
 
 For a correction of a pair of EPI images (blip-up, blip-down), 
 the different type of distortion based on phase encoding 
-directions are used to to make an off-resonance field (FSL TOPUP
-or a displacement field (EPIC)).
+directions are used to to make an off-resonance field (FSL TOPUP)
+or a displacement field (EPIC).
 
 In each of the medhods, the field is then used to "unwrap" each EPI 
 image in the pair, aiming the two to be identical.
