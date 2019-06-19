@@ -31,6 +31,7 @@ epi_corrections requires the following folder structure:
     │   ├── generate_dockerfile.sh
     │   ├── build.sh
     │   ├── run.sh
+    │   ├── clean.sh
     │   ├── conf/
     .
     .
@@ -65,9 +66,14 @@ cd ../../
 bash epi_corrections/docker/run.sh
 ```
 This will start a docker environment with JupyterLab in the top directory specified in the folder structure.
-Note that this will create the hidden folders .ipynb_checkpoints, .ipython, .jupyter, .local as well as the folder matlab
-in this top directory.
-Access JupyterLab in a browser from the provided URL in the terminal output.
+
+Note that this might create the hidden folders .ipynb_checkpoints, .ipython, .python_history, .bash_history, .jupyter, .local, .config as well as the folder matlab
+in this top directory. These folders can be removed by running (from top level directory)
+```bash
+bash epi_corrections/docker/clean.sh
+```
+
+- Access JupyterLab in a browser from the provided URL in the terminal output.
 From JupyterLab, open epi_corrections/notebooks/corretion_assessment_part_1.ipynb and follow the interactive guide.
 
 FreeSurfer's mri_robust_register, FSL TOPUP and EPIC should run fine with the precompiled binaries on a recent intel CPU. Instruction for (re-)compilating EPIC can be found in epic_src .
