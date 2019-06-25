@@ -6,7 +6,7 @@ function [region_values,...
     get_all_region_histograms(epi_corrections_out_dir)
 
 % Number of histogram cells; resolution of histograms.
-hist_num_cells = 60;
+hist_num_cells = 64;
 
 % % To be commended out when used as a function.
 % epi_corrections_out_dir = ...
@@ -24,17 +24,17 @@ regions_data = niftiread(regions_file_string);
 % Get CBV from raw EPI structs
 EPI_raw_CBV_struct_array = ...
     dir(strcat(epi_corrections_out_dir, ...
-    '/EPI_raw_DSC/*/*/*/*/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
+    '/EPI_raw_DSC/**/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
 
 % Get CBV from TOPUP corrected EPI structs
 EPI_applytopup_CBV_struct_array = ...
     dir(strcat(epi_corrections_out_dir, ...
-    '/EPI_applytopup/*/*/*/*/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
+    '/EPI_applytopup/**/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
 
 % Get CBV from EPIC corrected EPI structs
 EPI_applyepic_CBV_struct_array = ...
     dir(strcat(epi_corrections_out_dir, ...
-    '/EPI_applyepic/*/*/*/*/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
+    '/EPI_applyepic/**/wr_coregest_Normalized rCBV map -Leakage corrected.nii'));
 
 % Get global min and max value of CBV maps, so
 % that histograms can be compared.
@@ -44,7 +44,9 @@ EPI_applyepic_CBV_struct_array = ...
     EPI_applytopup_CBV_struct_array, ...
     EPI_applyepic_CBV_struct_array);
 
+disp('Global min is:');
 disp(hist_min_value);
+disp('Global max is:');
 disp(hist_max_value);
 
 % The histogram edges that is used
@@ -129,8 +131,11 @@ for i = 1:num_epic_CBV
     epic_CBV_region_histograms(i, :, :) = region_histograms;
 end
 
-%disp(size(raw_CBV_region_histograms));
-%disp(size(topup_CBV_region_histograms));
-%disp(size(epic_CBV_region_histograms));
+disp('The size of raw_CBV_region_histograms is:')
+disp(size(raw_CBV_region_histograms));
+disp('The size of topup_CBV_region_histograms is:')
+disp(size(topup_CBV_region_histograms));
+disp('The size of epic_CBV_region_histograms is:')
+disp(size(epic_CBV_region_histograms));
 
 end

@@ -10,5 +10,7 @@ matlabbatch{1}.spm.spatial.normalise.write.subj.resample = {};
 matlabbatch{1}.spm.spatial.normalise.write.woptions.bb = [-78 -112 -70
                                                           78 76 85];
 matlabbatch{1}.spm.spatial.normalise.write.woptions.vox = [2 2 2];
-matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 4; % 4. order b-spline
+%matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 4; % 4. order b-spline
+matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 1; % Trilinear (was found to perform most stable in intensity values)
+%matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 0; % Nearest
 matlabbatch{1}.spm.spatial.normalise.write.woptions.prefix = 'w';
