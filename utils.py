@@ -1274,7 +1274,7 @@ def dcm2niix_pipeline(DICOM_folder_name, \
                             keyword, \
                             conversion_log_file)
 
-def make_directory_folders_EPIC_friendly(parent_path):
+def replace_spaces_with_underscore(parent_path):
     # https://stackoverflow.com/questions/41176509/python-how-to-replace-whitespaces-by-underscore-in-the-name-of-all-files-folde
     # Renames the folder and file names within the (also relative) 
     # directory parent_path to be Unix friendly

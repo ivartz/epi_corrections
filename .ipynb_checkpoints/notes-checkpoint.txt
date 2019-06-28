@@ -1,0 +1,14 @@
+TODO
+
+https://se.mathworks.com/help/compiler/create-and-install-a-standalone-application-from-matlab-code.html
+
+Normalize write flair images as well in spm_pipeline/coreg_norm_images.m
+
+
+
+
+ffmpeg
+
+ffmpeg -i output_%03d.png -filter:v video.mp4
+
+ffmpeg -i output_%03d.png -filter:v "setpts=2.0*PTS" video.mp4

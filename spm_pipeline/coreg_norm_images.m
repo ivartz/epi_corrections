@@ -8,7 +8,7 @@ function coreg_norm_images(epi_corrections_out_dir)
 % NOTE: THIS NEEDS TO BE CHANGED
 regions_file = '/media/loek/HDD3TB1/apps/spm12/tpm/labels_Neuromorphometrics.nii';
 
-%epi_corrections_out_dir = '../../epi_corrections_out_2019_06_05_372114315';
+%epi_corrections_out_dir = '../../epi_corrections_out_2019_04_25';
 
 %FLAIR_3D_struct_array = dir(strcat(epi_corrections_out_dir, '/FLAIR_3D/*/*/*/*.nii'));
 FLAIR_3D_struct_array = dir(strcat(epi_corrections_out_dir, '/FLAIR_3D/**/*.nii'));

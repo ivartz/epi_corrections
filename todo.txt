@@ -1,1 +1,0 @@
-https://se.mathworks.com/help/compiler/create-and-install-a-standalone-application-from-matlab-code.html

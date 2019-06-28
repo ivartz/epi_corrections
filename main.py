@@ -48,7 +48,7 @@ from utils import create_directory_if_not_exists, \
                     epic_pipeline_init, \
                     report_listener, \
                     print_detected_data, \
-                    make_directory_folders_EPIC_friendly
+                    replace_spaces_with_underscore
 import sys, argparse
 from os import getcwd
 from os.path import relpath, abspath
@@ -98,7 +98,7 @@ def main(args):
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
         # folders and file names in 
-        make_directory_folders_EPIC_friendly(DICOM_directory)    
+        replace_spaces_with_underscore(DICOM_directory)    
     
     # Output folder. This program shall not output
     # or modify data in any other directory except

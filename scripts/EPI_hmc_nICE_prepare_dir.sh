@@ -35,7 +35,8 @@ run_section () {
 
     output_root_folder=$3
 
-    id=$RANDOM
+    #id=$RANDOM
+    id=$(uuidgen)
 
     cd $workdir
 
