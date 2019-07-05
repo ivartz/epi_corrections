@@ -1,4 +1,9 @@
-function [region_values, region_histograms] = calculate_region_histograms(volume_data, regions_data, hist_num_cells, hist_min, hist_max)
+function [region_values, region_histograms] = calculate_region_histograms(volume_data, ...
+                                                regions_data, ...
+                                                hist_num_cells, ...
+                                                hist_min, ...
+                                                hist_max)
+    
     % volume_file : file path + / + file name for the volume for which to
     % calculate region histograms (in MNI space)
     % region_file : file path + / + file name for the (resliced into volume_file MNI space
@@ -34,17 +39,26 @@ function [region_values, region_histograms] = calculate_region_histograms(volume
     % Any region that is not 0 is the brain.
     %regions_brain_mask = regions_data ~= 0;
     
-    % Opposite.
+    % Mask for Regions outsite of the brain.
     regions_nonbrain_mask = regions_data == 0;
 
     % Mask of the possible NaN values in volume.
-    volume_nan_mask = isnan(volume_data);
+    %volume_nan_mask = isnan(volume_data);
     
     % Setting possible NaN values in volume to 0 .
-    volume_data(volume_nan_mask) = single(0);
+    %volume_data(volume_nan_mask) = single(0);
     
     % Setting non-brain regions to 0 .
-    volume_data(regions_nonbrain_mask) = single(0);
+    %volume_data(regions_nonbrain_mask) = single(0);
+    
+    % Setting non-brain regions to nan
+    volume_data(regions_nonbrain_mask) = nan;
+    
+    % Volume zero mask
+    volume_zero_mask = volume_data == 0;
+    
+    % Setting zeros in the volume to nan
+    volume_data(volume_zero_mask) = nan;
  
     % A vector containing all unique values in 
     % regions_data.
@@ -74,7 +88,7 @@ function [region_values, region_histograms] = calculate_region_histograms(volume
         %assignin('base','region_data', region_data);
         
         % Create histogram
-        [N, ed] = histcounts(region_data(~isnan(region_data)), edges); 
+        [N, ~] = histcounts(region_data(~isnan(region_data)), edges); 
         %N = histcounts(region_data);
         
         %plot(edges(1:length(edges)-1), N);

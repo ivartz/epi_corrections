@@ -31,7 +31,7 @@ docker run kaczmarj/neurodocker:0.5.0 generate docker \
     cd /tmp && \
     rm -rf parallel_studio_xe_* icc.tgz && \
     rm /tmp/icc-config.cfg' \
-    --install less htop vim tmux rsync nload \
+    --install less htop vim tmux rsync nload uuid-runtime \
     --run "groupadd $(id -g $USER)" \
     --run "test "'"$(getent passwd '$USER')"'" || useradd -u $(id -u $USER) -g $(id -g $USER) --create-home --shell /bin/bash $USER" \
     --user $USER \

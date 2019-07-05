@@ -1,8 +1,12 @@
 TODO
 
+Done: Fix to correct DSC coreg reslice neuromorphometrics. 
+
+Not done: Normalize write flair images as well in spm_pipeline/coreg_norm_images.m
+
+
 https://se.mathworks.com/help/compiler/create-and-install-a-standalone-application-from-matlab-code.html
 
-Normalize write flair images as well in spm_pipeline/coreg_norm_images.m
 
 
 
@@ -28,4 +32,6 @@ ffmpeg -i output_%03d.png -filter:v "setpts=2.0*PTS" video.mp4
 # https://stackoverflow.com/questions/20847674/ffmpeg-libx264-height-not-divisible-by-2
 #ffmpeg -framerate 3 -i /home/ivar/Desktop/temp/render/EPI_raw_DSC/output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 1 /home/ivar/Desktop/temp/render/EPI_raw_DSC/video.mp4
 # Powerpoint compatible, more compressed
-#ffmpeg -framerate 3 -i render/output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 22 render/video.mp4
+
+
+ffmpeg -framerate 60 -i output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 22 video.mp4

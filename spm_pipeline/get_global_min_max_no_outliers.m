@@ -21,6 +21,9 @@ function [hist_min_value, hist_max_value] = get_global_min_max_no_outliers(...
     % Read the CBV
     volume_data = niftiread(CBV_file);
     
+    %disp(size(regions_data));
+    %disp(size(volume_data));
+    
     % set non-brain as nan
     volume_data(regions_nonbrain_mask) = nan;
     

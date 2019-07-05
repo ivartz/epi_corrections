@@ -293,7 +293,7 @@ parfor i = 1:length(EPI_struct_array)
     % --------------------------------
     
     % 4. Coreg reslice MNI regions file to perfusion MNI space
-    % using estimated deformation field from 3a.
+    % using final first dynamic DSC file.
     
     % The file consisting brain regions in MNI space should be resliced
     % to perfusion MNI space so that pixel-perfect masking of brain 
@@ -302,10 +302,11 @@ parfor i = 1:length(EPI_struct_array)
     % use Nearest Neighbour interpolation to achieve pixel-perfect
     % masking of brain regions.
     
-    % Image defining space; estimated deformation field from 3a.
-    ref = strcat(DSC_struct_array.folder, '/y_', ...
-        type, '_', FLAIR_3D_file_name, ',1');
-    
+    % Image defining space.
+    ref = ...
+    strcat(DSC_struct_array.folder, '/wr_coregest_', ...
+    DSC_struct_array.name, ',1');
+
     % A list containing all files to reslice.
     to_reslice = cell(1, 1);
     
@@ -566,7 +567,7 @@ parfor i = 1:length(EPI_struct_array)
     % --------------------------------
     
     % 4. Coreg reslice MNI regions file to perfusion MNI space
-    % using estimated deformation field from 3a.
+    % using final first dynamic DSC file.
     
     % The file consisting brain regions in MNI space should be resliced
     % to perfusion MNI space so that pixel-perfect masking of brain 
@@ -575,10 +576,11 @@ parfor i = 1:length(EPI_struct_array)
     % use Nearest Neighbour interpolation to achieve pixel-perfect
     % masking of brain regions.
     
-    % Image defining space; estimated deformation field from 3a.
-    ref = strcat(DSC_struct_array.folder, '/y_', ...
-        type, '_', FLAIR_3D_file_name, ',1');
-    
+    % Image defining space.
+    ref = ...
+    strcat(DSC_struct_array.folder, '/wr_coregest_', ...
+    DSC_struct_array.name, ',1');
+
     % A list containing all files to reslice.
     to_reslice = cell(1, 1);
     
@@ -839,7 +841,7 @@ parfor i = 1:length(EPI_struct_array)
     % --------------------------------
     
     % 4. Coreg reslice MNI regions file to perfusion MNI space
-    % using estimated deformation field from 3a.
+    % using final first dynamic DSC file.
     
     % The file consisting brain regions in MNI space should be resliced
     % to perfusion MNI space so that pixel-perfect masking of brain 
@@ -848,10 +850,11 @@ parfor i = 1:length(EPI_struct_array)
     % use Nearest Neighbour interpolation to achieve pixel-perfect
     % masking of brain regions.
     
-    % Image defining space; estimated deformation field from 3a.
-    ref = strcat(DSC_struct_array.folder, '/y_', ...
-        type, '_', FLAIR_3D_file_name, ',1');
-    
+    % Image defining space.
+    ref = ...
+    strcat(DSC_struct_array.folder, '/wr_coregest_', ...
+    DSC_struct_array.name, ',1');
+
     % A list containing all files to reslice.
     to_reslice = cell(1, 1);
     
