@@ -2,7 +2,8 @@ function [region_values, region_histograms] = calculate_region_histograms(volume
                                                 regions_data, ...
                                                 hist_num_cells, ...
                                                 hist_min, ...
-                                                hist_max)
+                                                hist_max, ...
+                                                region_req_covered_frac)
     
     % volume_file : file path + / + file name for the volume for which to
     % calculate region histograms (in MNI space)
@@ -87,16 +88,19 @@ function [region_values, region_histograms] = calculate_region_histograms(volume
 
         %assignin('base','region_data', region_data);
         
-        % Create histogram
-        [N, ~] = histcounts(region_data(~isnan(region_data)), edges); 
-        %N = histcounts(region_data);
+        if numel(region_data(~isnan(region_data)))/numel(mask(mask == 1)) >= region_req_covered_frac
         
-        %plot(edges(1:length(edges)-1), N);
-        
-        %disp(max(edges(:)));
-        
-        % Insert the histogram at the correct row.
-        region_histograms(i-1, :) = N;
+            % Create histogram
+            [N, ~] = histcounts(region_data(~isnan(region_data)), edges); 
+            %N = histcounts(region_data);
+
+            %plot(edges(1:length(edges)-1), N);
+
+            %disp(max(edges(:)));
+
+            % Insert the histogram at the correct row.
+            region_histograms(i-1, :) = N;
+        end
     end
     
     % Remove the first entry in region_values, 

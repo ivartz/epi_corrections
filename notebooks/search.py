@@ -75,3 +75,10 @@ def find_label_files(corrections_base_directory):
      if ("r_e2_labels_Neuromorphometrics.nii" in  tuple3[2])]
     
     return raw_label_files_e1, topup_label_files_e1, epic_label_files_e1, raw_label_files_e2, topup_label_files_e2, epic_label_files_e2
+
+def find_segment_files(segment_base_directory):
+    segment_files = \
+    [tuple3[0] + "/mni/rSegmentation.nii" \
+     for tuple3 in os.walk(segment_base_directory) \
+     if ("mni" in  tuple3[1])]
+    return segment_files
