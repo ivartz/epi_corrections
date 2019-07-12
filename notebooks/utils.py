@@ -201,6 +201,7 @@ def preprocess_and_calculate_all_histogram_distances(region_values_array,\
     num_subjects = len(cbv_hists_1_array)
     num_regions = len(region_values_array.flatten())
     
+    # Emtpy array to hold all distances
     all_distances_array = np.empty((num_subjects, num_regions))
     all_distances_array[:] = np.nan
     
@@ -222,13 +223,16 @@ def preprocess_and_calculate_all_histogram_distances(region_values_array,\
         
         subj_cbv_hists_2_prep_df = preprocess_histograms(subj_cbv_hists_2_df, two_tail_fraction=two_tail_fraction)
         
+        # Calculate distances
         subj_distances_df = calculate_similarities(subj_cbv_hists_1_prep_df, subj_cbv_hists_2_prep_df, method=comparison_method)
         
+        # Place the calculated distances at correct positions in all_distances_array
         for comparable_region in subj_distances_df.index:
             corresponding_region_idx = np.argwhere(region_values_array.flatten() == comparable_region)[0][0]
             
             all_distances_array[subj_idx, corresponding_region_idx] = subj_distances_df.loc[comparable_region]
     
-    all_distances_df = pd.DataFrame(all_distances_array, columns=region_names_array)
+    # Convert the result array to pandas dataframe with region values as header text
+    all_distances_df = pd.DataFrame(all_distances_array, columns=[str(v) for v in region_values_array.flatten()])
     
     return all_distances_df

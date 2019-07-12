@@ -8,6 +8,9 @@ import matplotlib
 #%matplotlib notebook
 #%matplotlib widget
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import matplotlib.gridspec as gridspec
+from spimagine.models.imageprocessor import BlurProcessor
 
 def spimagine_show_volume_numpy(numpy_array, stackUnits=(1, 1, 1), interpolation="nearest", cmap="grays"):
     # Spimagine OpenCL volume renderer.
@@ -15,6 +18,7 @@ def spimagine_show_volume_numpy(numpy_array, stackUnits=(1, 1, 1), interpolation
     spim_widget = \
     volshow(numpy_array, stackUnits=stackUnits, interpolation=interpolation)
     spim_widget.set_colormap(cmap)
+    spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
     
 def visualize_regions(regions_df, labels_data, labels_dims, interpolation="nearest", cmap="hot"):
     """
@@ -155,7 +159,7 @@ def preprocess_and_plot_selected_histograms(region_values,\
                                             correction_method="raw",\
                                             ID="1099269047"):
     fig = plt.figure(figsize=np.array([6.4*0.8, 4.8*0.8]))
-
+    
     cbv_hists_e1 = pd.DataFrame(\
                           data=eval(correction_method + "_e1_CBV_region_histograms")[subject_number], \
                           index=region_values.flatten(), \
@@ -193,19 +197,21 @@ def preprocess_and_plot_selected_histograms(region_values,\
     plt.legend(("cbv_hists_e1 mean", "cbv_hists_e1 median", "cbv_hists_e1 std", "cbv_hists_e2 mean", "cbv_hists_e2 median", "cbv_hists_e2 std"))
     plt.suptitle(title)
 
-def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="n", top=20):
-
+def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+    # Calculate medians
     all_distances_medians_df = all_distances_df.median()
-
+    # Sort the medians
     all_distances_medians_df.sort_values(ascending=False, inplace=True)
-
+    # Show the data according to the sorted medians
     all_distances_sorted_df = all_distances_df[all_distances_medians_df.index]
     
     if top=="all":
         selected_data = all_distances_sorted_df
     else:
+        # Pick top top highest columns after descending median
         selected_data = all_distances_sorted_df[all_distances_sorted_df.keys()[0:top]]
     
+    # ymax used later for correct placement of title text
     _, ymax = ax.get_ylim()
     this_ymax = selected_data.max().max()
     if ymax == 1 :
@@ -213,19 +219,387 @@ def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box
         ax.set_ylim(top=this_ymax)
     _, ymax = ax.get_ylim()
     
+    # Create boxplot
     bp = selected_data.boxplot(rot=-90, ax=ax)
+    # A list that is used give x placement of number of observations text
     x = np.arange(selected_data.shape[1])
+    # Count the number of observations in each column
     noofobs = selected_data.notna().sum()
+    # Write the number of observations above each box in the plot
     for tick, label in zip(x, bp.get_xticklabels()):
         bp.text(tick+1, ymax+0.05*ymax, noofobs[tick], horizontalalignment='center')
+    
+    plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    #plt.title(title, y=ymax+0.12*ymax)
+    # Used as a placement for title
     bp.text((tick//2)+1, ymax+0.2*ymax, title, horizontalalignment='center')
+    # Second twin y axis
     ax_sec = ax.twinx()
     ax_sec.set_yticklabels([])
     ax_sec.yaxis.set_ticks_position('none')
     ax_sec.set_ylabel(ylabel2, color='b')
-    if top=="all":
-        plt.suptitle("All histogram differences sorted after median")
+    
+    # Return top medians df for further analysis
+    to_return = selected_data.median()
+    # Set the index elements 
+    # (here the region values originally being string) 
+    # to uint64 for compatibility with visualize_regions()
+    to_return.index = to_return.index.astype(np.uint64)
+    return to_return
+
+def render_regions_set_to_pngs(regions_df, \
+                               labels_data, \
+                               labels_dims, \
+                               output_rel_dir, \
+                               png_prefix="", \
+                               interpolation="nearest", \
+                               cmap="hot", \
+                               windowMin=0, \
+                               windowMax=1, \
+                               blur_3d=False, \
+                               blur_3d_sigma=1):
+    
+    # The regions data is visualized as a 3D heat map
+    heat_map = labels_data.copy()
+    
+    # Fill regions in the the heat volume by 
+    # corresponding values in regions_df
+    # Set a region to 0 if it is not in regions_df
+    for region_value in np.array(np.unique(heat_map)):
+        if region_value not in regions_df.index:
+            heat_map[heat_map == region_value] = 0
+        else:
+            heat_map[heat_map == region_value] = regions_df.loc[region_value]
+    
+    # Three views are rendered to file with names:
+    png_file_1 = output_rel_dir + "/" + png_prefix + "-axial-inferior-superior.png"
+    png_file_2 = output_rel_dir + "/" + png_prefix + "-sagittal-r-l-radiolog.png"
+    png_file_3 = output_rel_dir + "/" + png_prefix + "-mixed-r-l-radiolog-posterior-anterior.png"
+    
+    # Create a spimagine instance, then save three views to separate pngs
+    volfig()
+    spim_widget = \
+    volshow(heat_map, autoscale=False, stackUnits=labels_dims, interpolation=interpolation)
+    
+    # A hack to enable blur. Currently not working, so should be disabled.
+    if blur_3d:
+        # Add a blur module with preferred sigma
+        spim_widget.impListView.add_image_processor(BlurProcessor(blur_3d_sigma))
+        # Animate click for enabling the blur
+        spim_widget.impListView.impViews[-1].children()[0].animateClick()
+    
+    # Set colormap
+    spim_widget.set_colormap(cmap)
+    
+    # Windowing
+    #spim_widget.transform.setValueScale(regions_df.min(), regions_df.max())
+    #spim_widget.transform.setValueScale(0, regions_df.max())
+    spim_widget.transform.setValueScale(windowMin, windowMax)
+    
+    # Set interpolation directly
+    #spim_widget.transform.setInterpolate(1)
+    
+    # Set bounding box not visible
+    spim_widget.transform.setBox(False)
+    
+    # Zoom
+    spim_widget.transform.setZoom(1.4)
+    
+    # NB: The rotations are not adding up.
+    # each spim_widget.transform.setRotation call
+    # rotates from original orientation given by volshow()
+    
+    # First view
+    spim_widget.transform.setRotation(np.pi/2,0,1,0)
+    # Take snapshot
+    spim_widget.saveFrame(png_file_1)
+    
+    # Second view
+    spim_widget.transform.setRotation(np.pi/4,0,1,0)
+    # Take snapshot
+    spim_widget.saveFrame(png_file_2)
+    
+    # Third view
+    spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
+    # Take snapshot
+    spim_widget.saveFrame(png_file_3)
+    
+    # Close spimagine
+    spim_widget.closeMe()
+    
+    #spim_widget.minSlider.value()
+    #spim_widget.maxSlider.value()
+    #spim_widget.maxSlider.onChanged(500 + (500/16) * regions_df.max())
+    #spim_widget.maxSlider.onChanged(1000)
+    #spim_widget.minSlider.onChanged(500 + (500/16) * regions_df.min())
+    #spim_widget.minSlider.onChanged(0)
+    
+    return png_file_1, png_file_2, png_file_3
+
+def sorted_boxplot_heatmap_figure(df_1, \
+                                  df_2, \
+                                  df_3, 
+                                  df_4, \
+                                  ylabel_1, \
+                                  ylabel_2, \
+                                  ylabel_3, \
+                                  ylabel_4, \
+                                  distance_name, \
+                                  labels_data, \
+                                  labels_dims, \
+                                  CBV_out_dir, \
+                                  rendered_image_files_list, \
+                                  top = "all", \
+                                  render_pngs = True, \
+                                  windowMin = 0, \
+                                  windowMax = 1*0.8, \
+                                  interpolation = "nearest", \
+                                  cmap = "hot", \
+                                  blur_3d = False, \
+                                  blur_3d_sigma = 1, \
+                                  method_comparison = False):
+    
+    fig = plt.figure(figsize=np.array([9, 10]))
+    
+    gs1 = gridspec.GridSpec(4, 3)
+    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    ax1 = plt.subplot(gs1[0, :])
+    medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
+                                       ax1, \
+                                       ylabel2=ylabel_1, \
+                                       ylabel="", \
+                                       title="#n in each box", \
+                                       xlabel="", 
+                                       top=top)
+    ax2 = plt.subplot(gs1[1, :])
+    medians_df_2 = sorted_boxplot_histogram_distances(df_2, \
+                                       ax2, \
+                                       ylabel2=ylabel_2, \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    ax3 = plt.subplot(gs1[2, :])
+    medians_df_3 = sorted_boxplot_histogram_distances(df_3, \
+                                       ax3, \
+                                       ylabel2=ylabel_3, \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    ax4 = plt.subplot(gs1[3, :])
+    medians_df_4 = sorted_boxplot_histogram_distances(df_4, \
+                                       ax4, \
+                                       ylabel2=ylabel_4, \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="Neuromorphometrics Inc. region value", \
+                                       top=top)
+    
+    
+    gs2 = gridspec.GridSpec(4, 3)
+    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    
+    if render_pngs:
+        rendered_image_files_list = []
+    
+    
+    # Render pngs for raw_vs_topup_e1_hellinger_medians_df
+    if render_pngs:
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_1, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r1", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r1_png_file_1]
+        rendered_image_files_list += [r1_png_file_2]
+        rendered_image_files_list += [r1_png_file_3]
     else:
-        plt.suptitle("Top " + str(top) + " histogram differences sorted after median")
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        rendered_image_files_list[0], \
+        rendered_image_files_list[1], \
+        rendered_image_files_list[2]
+        
+    ax5 = plt.subplot(gs2[0, 0])
+    png_1=mpimg.imread(r1_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    
+    ax6 = plt.subplot(gs2[0, 1])
+    png_2=mpimg.imread(r1_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax7 = plt.subplot(gs2[0, 2])
+    png_3=mpimg.imread(r1_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    # Render pngs for raw_vs_epic_e1_hellinger_medians_df
+    if render_pngs:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_2, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r2", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r2_png_file_1]
+        rendered_image_files_list += [r2_png_file_2]
+        rendered_image_files_list += [r2_png_file_3]
+    else:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        rendered_image_files_list[3], \
+        rendered_image_files_list[4], \
+        rendered_image_files_list[5]
+    
+    ax8 = plt.subplot(gs2[1, 0])
+    png_1=mpimg.imread(r2_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    
+    ax9 = plt.subplot(gs2[1, 1])
+    png_2=mpimg.imread(r2_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax10 = plt.subplot(gs2[1, 2])
+    png_3=mpimg.imread(r2_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for raw_vs_topup_e2_hellinger_medians_df
+    if render_pngs:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_3, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r3", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r3_png_file_1]
+        rendered_image_files_list += [r3_png_file_2]
+        rendered_image_files_list += [r3_png_file_3]
+    else:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        rendered_image_files_list[6], \
+        rendered_image_files_list[7], \
+        rendered_image_files_list[8]
+    
+    ax11 = plt.subplot(gs2[2, 0])
+    png_1=mpimg.imread(r3_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    
+    ax12 = plt.subplot(gs2[2, 1])
+    png_2=mpimg.imread(r3_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax13 = plt.subplot(gs2[2, 2])
+    png_3=mpimg.imread(r3_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for raw_vs_epic_e2_hellinger_medians_df
+    if render_pngs:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_4, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r4", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r4_png_file_1]
+        rendered_image_files_list += [r4_png_file_2]
+        rendered_image_files_list += [r4_png_file_3]
+    else:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        rendered_image_files_list[9], \
+        rendered_image_files_list[10], \
+        rendered_image_files_list[11]
+    
+    ax14 = plt.subplot(gs2[3, 0])
+    png_1=mpimg.imread(r4_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.title("axial \ninferior-superior", y=-0.6)
+    
+    ax15 = plt.subplot(gs2[3, 1])
+    png_2=mpimg.imread(r4_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    plt.title("sagittal \nr-l \nradiolog", y=-0.6)
+    
+    ax16 = plt.subplot(gs2[3, 2])
+    png_3=mpimg.imread(r4_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    plt.title("mixed \nr-l \nradiolog \nposterior-anterior", y=-0.6)
+    
+    # Common x axis
+    #fig.text(0.5, 0.04, 'common X', ha='center')
+    # Common y axis
+    fig.text(0.01, 0.5, distance_name + " distance", va="center", rotation="vertical")
+    # Box plots supertitle
+    fig.text(0.135, 0.975, "Top " + str(top) + " distances after median")
+    # Images supertitle
+    if method_comparison:
+        fig.text(0.6, 0.95, "Regions most different between correction \nmethods. Based on all median values")
+    else:
+        fig.text(0.6, 0.95, "Regions most affected \nby correction. Based on all median values")
+    
+    # Supertitle
+    #fig.suptitle("Top " + str(top) + " histogram differences sorted after median")
+    #plt.subplots_adjust(wspace=0)
+    #fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.5)
+    #fig.subplots_adjust(left=0.3, bottom=0.3, right=0.3, top=0.3, wspace=0.3, hspace=0.3)
+    #fig.tight_layout()
+    
+    return rendered_image_files_list
