@@ -236,3 +236,127 @@ def preprocess_and_calculate_all_histogram_distances(region_values_array,\
     all_distances_df = pd.DataFrame(all_distances_array, columns=[str(v) for v in region_values_array.flatten()])
     
     return all_distances_df
+
+def combine_and_compute_mean(files, brain_mask, apply_brain_mask=True):
+    # Voxel-wise means across multiple files
+    
+    for i, file in enumerate(files):
+
+        if i == 0:
+            # Load data
+            file_data, _, file_hdr = load_nifti(file)
+            file_affine = nib.load(file).affine
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+            
+            # Create array to contain all fields of dimension (num_fields, z, y, x)
+            files_data = np.zeros_like(file_data_copy)[np.newaxis].repeat(len(files), axis=0)
+        else:
+            # Load field data
+            file_data, _, _ = load_nifti(file)
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+    
+        if apply_brain_mask:
+            file_data_copy[~brain_mask] = np.nan
+        
+        # Fill in correct field
+        files_data[i] = file_data_copy
+        
+    # Compute the mean along first axis and create Nifti image class instance
+    files_img = nib.spatialimages.SpatialImage(files_data.mean(axis=0), affine=file_affine, header=file_hdr)
+    
+    return files_img
+
+def combine_and_compute_mean_for_roi(files, brain_mask, roi_value=3, apply_brain_mask=True):
+    # Voxel-wise means across multiple files
+    
+    for i, file in enumerate(files):
+
+        if i == 0:
+            # Load data
+            file_data, _, file_hdr = load_nifti(file)
+            file_affine = nib.load(file).affine
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+            
+            # Create array to contain all fields of dimension (num_fields, z, y, x)
+            files_data = np.zeros_like(file_data_copy)[np.newaxis].repeat(len(files), axis=0)
+        else:
+            # Load field data
+            file_data, _, _ = load_nifti(file)
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+    
+        if apply_brain_mask:
+            file_data_copy[~brain_mask] = np.nan
+
+        # Set all other regions than the selected roi value to 0
+        file_data_copy[file_data_copy != roi_value] = 0
+            
+        # Fill in correct field
+        files_data[i] = file_data_copy
+        
+    # Compute the mean along first axis and create Nifti image class instance
+    files_img = nib.spatialimages.SpatialImage(files_data.mean(axis=0), affine=file_affine, header=file_hdr)
+    
+    return files_img
+
+def combine_and_compute_median(files, brain_mask, apply_brain_mask=True):
+    # Voxel-wise medians across multiple files
+    
+    for i, file in enumerate(files):
+
+        if i == 0:
+            # Load data
+            file_data, _, file_hdr = load_nifti(file)
+            file_affine = nib.load(file).affine
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+            
+            # Create array to contain all fields of dimension (num_fields, z, y, x)
+            files_data = np.zeros_like(file_data_copy)[np.newaxis].repeat(len(files), axis=0)
+        else:
+            # Load field data
+            file_data, _, _ = load_nifti(file)
+            
+            # Continue with a copy
+            file_data_copy = file_data.copy()
+
+        if apply_brain_mask:
+            file_data_copy[~brain_mask] = np.nan
+
+        # Fill in correct field
+        files_data[i] = file_data_copy
+    
+    # Compute the mean along first axis and create Nifti image class instance
+    files_img = nib.spatialimages.SpatialImage(np.median(files_data, axis=0), affine=file_affine, header=file_hdr)
+    
+    return files_img
+
+def remove_tumors_from_files(cbv_files, segment_files):
+    
+    for i, cbv_file in enumerate(cbv_files):
+        
+        # Load cbv data
+        cbv_data, _, cbv_hdr = load_nifti(cbv_file)
+        cbv_affine = nib.load(cbv_file).affine
+        # Continue with a copy
+        cbv_data_copy = cbv_data.copy()
+        
+        # Load tumor segments data
+        segment_data, _, _ = load_nifti(segment_files[i])
+        
+        # Set segments to zero in cbv_data
+        cbv_data_copy[segment_data != 0] = 0
+        
+        # Create Nifti image class instance of cbv
+        cbv_img = nib.spatialimages.SpatialImage(cbv_data_copy, affine=cbv_affine, header=cbv_hdr)
+        
+        # Save cbv by overwriting original cbv file
+        nib.save(cbv_img, cbv_file)

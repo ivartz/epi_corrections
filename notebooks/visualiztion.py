@@ -11,14 +11,17 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.gridspec as gridspec
 from spimagine.models.imageprocessor import BlurProcessor
+from spimagine.utils.quaternion import Quaternion
 
 def spimagine_show_volume_numpy(numpy_array, stackUnits=(1, 1, 1), interpolation="nearest", cmap="grays"):
     # Spimagine OpenCL volume renderer.
     volfig()
     spim_widget = \
-    volshow(numpy_array, stackUnits=stackUnits, interpolation=interpolation)
+    volshow(numpy_array[::-1, ::-1, ::-1], stackUnits=stackUnits, interpolation=interpolation)
     spim_widget.set_colormap(cmap)
-    spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
+    #spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
+    #spim_widget.transform.setQuaternion(Quaternion(-0.3228904671232426,-0.8924886253708287,-0.28916944161613134,0.12484724075684332))
+    spim_widget.transform.setQuaternion(Quaternion(-0.005634209439510011,0.00790509382124309,-0.0013812284289010514,-0.9999519273706857))
     
 def visualize_regions(regions_df, labels_data, labels_dims, interpolation="nearest", cmap="hot"):
     """
@@ -220,14 +223,23 @@ def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box
     _, ymax = ax.get_ylim()
     
     # Create boxplot
-    bp = selected_data.boxplot(rot=-90, ax=ax)
+    bp = selected_data.boxplot(rot=-90, ax=ax, grid=False)
+    #bp = selected_data.boxplot(rot=-55, ax=ax, grid=False)
     # A list that is used give x placement of number of observations text
     x = np.arange(selected_data.shape[1])
     # Count the number of observations in each column
     noofobs = selected_data.notna().sum()
     # Write the number of observations above each box in the plot
+    #for tick, label in zip(x, bp.get_xticklabels()):
+    #    bp.text(tick+1, ymax+0.05*ymax, noofobs[tick], horizontalalignment='center')
+
+    # Add number of observations to xticklabels
+    xticklabels = []
     for tick, label in zip(x, bp.get_xticklabels()):
-        bp.text(tick+1, ymax+0.05*ymax, noofobs[tick], horizontalalignment='center')
+        #xticklabels += [label.get_text() + " (n=" + str(noofobs[tick]) + ")"]
+        xticklabels += [label.get_text() + " (" + str(noofobs[tick]) + ")"]
+    # Update the histogram plot with the new xticklabels
+    bp.set_xticklabels(xticklabels)
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -279,7 +291,7 @@ def render_regions_set_to_pngs(regions_df, \
     # Create a spimagine instance, then save three views to separate pngs
     volfig()
     spim_widget = \
-    volshow(heat_map, autoscale=False, stackUnits=labels_dims, interpolation=interpolation)
+    volshow(heat_map[::-1, ::-1, ::-1], autoscale=False, stackUnits=labels_dims, interpolation=interpolation)
     
     # A hack to enable blur. Currently not working, so should be disabled.
     if blur_3d:
@@ -310,17 +322,20 @@ def render_regions_set_to_pngs(regions_df, \
     # rotates from original orientation given by volshow()
     
     # First view
-    spim_widget.transform.setRotation(np.pi/2,0,1,0)
+    #spim_widget.transform.setRotation(np.pi/2,0,1,0)
+    spim_widget.transform.setQuaternion(Quaternion(-0.005634209439510011,0.00790509382124309,-0.0013812284289010514,-0.9999519273706857))
     # Take snapshot
     spim_widget.saveFrame(png_file_1)
     
     # Second view
-    spim_widget.transform.setRotation(np.pi/4,0,1,0)
+    #spim_widget.transform.setRotation(np.pi/4,0,1,0)
+    spim_widget.transform.setQuaternion(Quaternion(0.007638906066214874,-0.7092538697232732,-0.004760086014776442,0.7048956918250604))
     # Take snapshot
     spim_widget.saveFrame(png_file_2)
     
     # Third view
-    spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
+    #spim_widget.transform.setRotation(np.pi/8,-0.6,0.5,1)
+    spim_widget.transform.setQuaternion(Quaternion(-0.3228904671232426,-0.8924886253708287,-0.28916944161613134,0.12484724075684332))
     # Take snapshot
     spim_widget.saveFrame(png_file_3)
     
@@ -369,7 +384,7 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                        ax1, \
                                        ylabel2=ylabel_1, \
                                        ylabel="", \
-                                       title="#n in each box", \
+                                       title="", \
                                        xlabel="", 
                                        top=top)
     ax2 = plt.subplot(gs1[1, :])
@@ -394,7 +409,7 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                        ylabel2=ylabel_4, \
                                        ylabel="", \
                                        title="", \
-                                       xlabel="Neuromorphometrics Inc. region value", \
+                                       xlabel="", \
                                        top=top)
     
     
@@ -575,28 +590,29 @@ def sorted_boxplot_heatmap_figure(df_1, \
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nr-l \nradiolog", y=-0.6)
+    plt.title("sagittal \nright-left \nradiolog", y=-0.6)
     
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
     plt.imshow(png_3, aspect="equal")
     plt.axis("off")
-    plt.title("mixed \nr-l \nradiolog \nposterior-anterior", y=-0.6)
+    plt.title("mixed \nright-left \nradiolog \nposterior-anterior", y=-0.6)
     
     # Common x axis
     #fig.text(0.5, 0.04, 'common X', ha='center')
     # Common y axis
-    fig.text(0.01, 0.5, distance_name + " distance", va="center", rotation="vertical")
+    #fig.text(0.01, 0.5, distance_name + " distance", va="center", rotation="vertical")
     # Box plots supertitle
-    fig.text(0.135, 0.975, "Top " + str(top) + " distances after median")
+    #fig.text(0.135, 0.975, "Top " + str(top) + " changing regions")
     # Images supertitle
-    if method_comparison:
-        fig.text(0.6, 0.95, "Regions most different between correction \nmethods. Based on all median values")
-    else:
-        fig.text(0.6, 0.95, "Regions most affected \nby correction. Based on all median values")
+    #if method_comparison:
+    #    fig.text(0.6, 0.95, "Regions most different between correction \nmethods. Based on all median values")
+    #else:
+    #    fig.text(0.6, 0.95, "Regions most affected \nby correction. Based on all median values")
     
     # Supertitle
-    #fig.suptitle("Top " + str(top) + " histogram differences sorted after median")
+    fig.suptitle("rCBV change between TOPUP and EPIC corrections")
+    #fig.suptitle("rCBV change between corrections according to " + distance_name + " distance")
     #plt.subplots_adjust(wspace=0)
     #fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.5)
     #fig.subplots_adjust(left=0.3, bottom=0.3, right=0.3, top=0.3, wspace=0.3, hspace=0.3)
