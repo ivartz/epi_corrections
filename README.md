@@ -82,11 +82,11 @@ The provided dcm2niix_ogeier, FreeSurfer's mri_robust_register, FSL TOPUP and EP
 
 ## Dependencies for running without docker
 
-- FSL 6.0.0 : For topup and various tools used.
+- FSL (6.0.0) : For topup and various tools used.
 - EPIC (included in the folder epic_src). See epic_src for a separate README.md for EPIC dependencies for compilation.
-- libfftw3-dev : for EPIC.
+- libfftw3-dev (3.3.4) : for EPIC.
 - freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.0-2beb96c : For mri_robust_register.
-- nipy, nipype : for similarity metrics.
+- nipy (0.4.1), nipype (1.1.5): for similarity metrics.
 - dcm2niix version v1.0.20181125  GCC7.3.0 (64-bit Linux) 
 modified by Oliver M. Geier to not reorient the scan to the 
 scanner's RPI coordinate system (so that the orientation of .nii 
@@ -106,8 +106,8 @@ Included under scripts along with wrapper script : For DICOM (.dcm) to NIFTI (.n
 
 __FSL topup__:
 
-Andersson, J. L. R., Skare, S. & Ashburner, J. How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging. NeuroImage 20, 870–888 (2003).
+Andersson, J. L. R., Skare, S. & Ashburner, J. [How to correct susceptibility distortions in spin-echo echo-planar images: application to diffusion tensor imaging](https://www.sciencedirect.com/science/article/abs/pii/S1053811903003367). Neuroimage 20, 870–888 (2003).
 
 __EPIC__:
 
-Holland, D., Kuperman, J. M. & Dale, A. M. Efficient Correction of Inhomogeneous Static Magnetic Field-Induced Distortion in Echo Planar Imaging. Neuroimage 50, 175 (2010).
+Holland, D., Kuperman, J. M. & Dale, A. M. [Efficient Correction of Inhomogeneous Static Magnetic Field-Induced Distortion in Echo Planar Imaging](https://www.sciencedirect.com/science/article/abs/pii/S1053811909012294). Neuroimage 50, 175 (2010).
