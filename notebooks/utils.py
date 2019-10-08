@@ -142,6 +142,23 @@ def preprocess_histograms(hists_orig, two_tail_fraction=0.05):
     hists = hists.apply(lambda row: row/row.sum(), axis=1)
     return hists
 
+def preprocess_histograms_2(hists_orig, two_tail_fraction=0.05):
+    """
+    hists_orig: pandas.core.frame.DataFrame
+    contains all MNI region histograms 
+    for a single cbv volume .
+    Returns: pandas.core.frame.DataFrame
+    Preprocessing:
+    
+    1. Remove rows with only 0s .
+    
+    """
+    hists = hists_orig.copy()
+    
+    # 1.
+    hists = hists.loc[~(hists==0).all(axis=1)]
+    return hists
+
 def hellinger_distance(p, q):
     """
     "Probabillistic euclidean distance"
@@ -164,6 +181,21 @@ def calculate_similarities(hists1, hists2, method="hellinger"):
     """
     return pd.concat((hists1, hists2), axis=1, join="inner")\
             .apply(lambda row: eval(method + "_distance")(hists1.loc[row.name].values, hists2.loc[row.name].values), axis=1)
+
+def calculate_total_rcbv_change(hists1, hists2, hist_edges_array):
+    """
+    Calculate total rCBV change by formula (hist2.*hist_edges_array).sum() - (hist1.*hist_edges_array).sum()
+    """
+    return pd.concat((hists1, hists2), axis=1, join="inner")\
+            .apply(lambda row: (hists2.loc[row.name].values*hist_edges_array.flatten()[1:]).sum() - (hists1.loc[row.name].values*hist_edges_array.flatten()[1:]).sum(), axis=1)
+
+def calculate_relative_rcbv_change(hists1, hists2, hist_edges_array):
+    """
+    Calculate total rCBV change by formula (hist2.*hist_edges_array).sum() / (hist1.*hist_edges_array).sum()
+    """
+    return pd.concat((hists1, hists2), axis=1, join="inner")\
+            .apply(lambda row: (hists2.loc[row.name].values*hist_edges_array.flatten()[1:]).sum() / (hists1.loc[row.name].values*hist_edges_array.flatten()[1:]).sum(), axis=1)
+
 
 def get_cbv_and_labels_paths(raw_e1_CBV_region_histograms,\
                                 raw_e1_CBV_dirs,\
@@ -235,7 +267,108 @@ def preprocess_and_calculate_all_histogram_distances(region_values_array,\
     # Convert the result array to pandas dataframe with region values as header text
     all_distances_df = pd.DataFrame(all_distances_array, columns=[str(v) for v in region_values_array.flatten()])
     
+    # Convert the result array to pandas dataframe with region names as header text. NB! visualize_regions() will not work.
+    #all_distances_df = pd.DataFrame(all_distances_array, columns=[str(v) for v in region_names_array.flatten()])
+    
     return all_distances_df
+
+def preprocess_and_calculate_all_histogram_total_rcbv_changes(region_values_array,\
+                                                     region_names_array,\
+                                                     hist_edges_array,\
+                                                     cbv_hists_1_array,\
+                                                     cbv_hists_2_array,\
+                                                     two_tail_fraction):
+    
+    assert len(region_values_array.flatten()) == len(region_names_array), "The region values and names lists have different length!"
+    assert len(cbv_hists_1_array) == len(cbv_hists_2_array), "The two histogram collections have different length!"
+    
+    num_subjects = len(cbv_hists_1_array)
+    num_regions = len(region_values_array.flatten())
+    
+    # Emtpy array to hold all distances
+    all_rcbv_changes_array = np.empty((num_subjects, num_regions))
+    all_rcbv_changes_array[:] = np.nan
+    
+    for subj_idx in range(num_subjects):
+        
+        # For instance histograms of non-corrected GE rCBV
+        subj_cbv_hists_1_df = \
+        pd.DataFrame(data=cbv_hists_1_array[subj_idx], \
+                     index=region_values_array.flatten(), \
+                     columns=hist_edges_array[0][:-1])
+        
+        subj_cbv_hists_1_prep_df = preprocess_histograms_2(subj_cbv_hists_1_df, two_tail_fraction=two_tail_fraction)
+        
+        # For instance histograms of TOPUP corrected GE rCBV
+        subj_cbv_hists_2_df = \
+        pd.DataFrame(data=cbv_hists_2_array[subj_idx], \
+                     index=region_values_array.flatten(), \
+                     columns=hist_edges_array[0][:-1])
+        
+        subj_cbv_hists_2_prep_df = preprocess_histograms_2(subj_cbv_hists_2_df, two_tail_fraction=two_tail_fraction)
+        
+        # Calculate total change
+        subj_rcbv_changes_df = calculate_total_rcbv_change(subj_cbv_hists_1_prep_df, subj_cbv_hists_2_prep_df, hist_edges_array)
+        
+        # Place the calculated percentage changes at correct positions in all_percentages_array
+        for comparable_region in subj_rcbv_changes_df.index:
+            corresponding_region_idx = np.argwhere(region_values_array.flatten() == comparable_region)[0][0]
+            
+            all_rcbv_changes_array[subj_idx, corresponding_region_idx] = subj_rcbv_changes_df.loc[comparable_region]
+    
+    # Convert the result array to pandas dataframe with region values as header text
+    all_rcbv_changes_df = pd.DataFrame(all_rcbv_changes_array, columns=[str(v) for v in region_values_array.flatten()])
+    
+    return all_rcbv_changes_df
+
+def preprocess_and_calculate_all_histogram_relative_rcbv_changes(region_values_array,\
+                                                     region_names_array,\
+                                                     hist_edges_array,\
+                                                     cbv_hists_1_array,\
+                                                     cbv_hists_2_array,\
+                                                     two_tail_fraction):
+    
+    assert len(region_values_array.flatten()) == len(region_names_array), "The region values and names lists have different length!"
+    assert len(cbv_hists_1_array) == len(cbv_hists_2_array), "The two histogram collections have different length!"
+    
+    num_subjects = len(cbv_hists_1_array)
+    num_regions = len(region_values_array.flatten())
+    
+    # Emtpy array to hold all distances
+    all_rcbv_changes_array = np.empty((num_subjects, num_regions))
+    all_rcbv_changes_array[:] = np.nan
+    
+    for subj_idx in range(num_subjects):
+        
+        # For instance histograms of non-corrected GE rCBV
+        subj_cbv_hists_1_df = \
+        pd.DataFrame(data=cbv_hists_1_array[subj_idx], \
+                     index=region_values_array.flatten(), \
+                     columns=hist_edges_array[0][:-1])
+        
+        subj_cbv_hists_1_prep_df = preprocess_histograms_2(subj_cbv_hists_1_df, two_tail_fraction=two_tail_fraction)
+        
+        # For instance histograms of TOPUP corrected GE rCBV
+        subj_cbv_hists_2_df = \
+        pd.DataFrame(data=cbv_hists_2_array[subj_idx], \
+                     index=region_values_array.flatten(), \
+                     columns=hist_edges_array[0][:-1])
+        
+        subj_cbv_hists_2_prep_df = preprocess_histograms_2(subj_cbv_hists_2_df, two_tail_fraction=two_tail_fraction)
+        
+        # Calculate total change
+        subj_rcbv_changes_df = calculate_relative_rcbv_change(subj_cbv_hists_1_prep_df, subj_cbv_hists_2_prep_df, hist_edges_array)
+        
+        # Place the calculated percentage changes at correct positions in all_percentages_array
+        for comparable_region in subj_rcbv_changes_df.index:
+            corresponding_region_idx = np.argwhere(region_values_array.flatten() == comparable_region)[0][0]
+            
+            all_rcbv_changes_array[subj_idx, corresponding_region_idx] = subj_rcbv_changes_df.loc[comparable_region]
+    
+    # Convert the result array to pandas dataframe with region values as header text
+    all_rcbv_changes_df = pd.DataFrame(all_rcbv_changes_array, columns=[str(v) for v in region_values_array.flatten()])
+    
+    return all_rcbv_changes_df
 
 def combine_and_compute_mean(files, brain_mask, apply_brain_mask=True):
     # Voxel-wise means across multiple files

@@ -200,13 +200,22 @@ def preprocess_and_plot_selected_histograms(region_values,\
     plt.legend(("cbv_hists_e1 mean", "cbv_hists_e1 median", "cbv_hists_e1 std", "cbv_hists_e2 mean", "cbv_hists_e2 median", "cbv_hists_e2 std"))
     plt.suptitle(title)
 
-def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, ax, region_values, region_names, region_names_to_exclude, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+    # Drop excluded regions
+    all_distances_df = \
+    all_distances_df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)
+    all_relative_rcbv_df = \
+    all_relative_rcbv_df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)    
+    # --for distances
     # Calculate medians
     all_distances_medians_df = all_distances_df.median()
     # Sort the medians
     all_distances_medians_df.sort_values(ascending=False, inplace=True)
     # Show the data according to the sorted medians
     all_distances_sorted_df = all_distances_df[all_distances_medians_df.index]
+    # --for relative rcbv
+    # Calculate medians
+    all_relative_rcbv_medians_df = all_relative_rcbv_df.median()
     
     if top=="all":
         selected_data = all_distances_sorted_df
@@ -237,7 +246,24 @@ def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box
     xticklabels = []
     for tick, label in zip(x, bp.get_xticklabels()):
         #xticklabels += [label.get_text() + " (n=" + str(noofobs[tick]) + ")"]
-        xticklabels += [label.get_text() + " (" + str(noofobs[tick]) + ")"]
+        
+        region_name = region_names[np.where(region_values == np.int64(label.get_text()))[0][0]]
+        
+        region_median_relative_rcbv_change = all_relative_rcbv_medians_df.loc[label.get_text()]
+        
+        region_text_space = [" " for s in range(30)] # 36
+        
+        if len(region_name) > len(region_text_space):
+            region_name = region_name[0:len(region_text_space)]
+            region_text_space[0:len(region_name)] = region_name
+            region_text_space[-3:] = "..."
+        else:
+            region_text_space[0:len(region_name)] = region_name
+        region_text = "".join(region_text_space)
+        description_text = "(" + format(noofobs[tick], '02d') + ") " + region_text + " {0:.3f}".format(region_median_relative_rcbv_change)
+        #print(description_text + "|")
+        
+        xticklabels += [description_text]
     # Update the histogram plot with the new xticklabels
     bp.set_xticklabels(xticklabels)
     
@@ -253,6 +279,146 @@ def sorted_boxplot_histogram_distances(all_distances_df, ax, ylabel2="Sorted Box
     
     # Return top medians df for further analysis
     to_return = selected_data.median()
+    
+    # Set the index elements 
+    # (here the region values originally being string) 
+    # to uint64 for compatibility with visualize_regions()
+    to_return.index = to_return.index.astype(np.uint64)
+    return to_return
+
+def sorted_boxplot_relative_rcbv_change(all_total_rcbv_df, ax, region_values, region_names, region_names_to_exclude, ascending=False, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+    all_total_rcbv_df = \
+    all_total_rcbv_df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)    
+    # --for relative rcbv
+    # Calculate medians
+    all_total_rcbv_medians_df = all_total_rcbv_df.median()
+    all_total_rcbv_medians_df.sort_values(ascending=ascending, inplace=True)
+    # Show the data according to the sorted medians
+    all_total_rcbv_sorted_df = all_total_rcbv_df[all_total_rcbv_medians_df.index]
+    
+    if top=="all":
+        selected_data = all_total_rcbv_sorted_df
+    else:
+        # Pick top top highest columns after descending median
+        selected_data = all_total_rcbv_sorted_df[all_total_rcbv_sorted_df.keys()[0:top]]
+    
+    # ymax used later for correct placement of title text
+    _, ymax = ax.get_ylim()
+    this_ymax = selected_data.max().max()
+    if ymax == 1 :
+        # Replace the default value
+        ax.set_ylim(top=this_ymax)
+    _, ymax = ax.get_ylim()
+    
+    # Create boxplot
+    bp = selected_data.boxplot(rot=-90, ax=ax, grid=False)
+    #bp = selected_data.boxplot(rot=-55, ax=ax, grid=False)
+    # A list that is used give x placement of number of observations text
+    x = np.arange(selected_data.shape[1])
+    # Count the number of observations in each column
+    noofobs = selected_data.notna().sum()
+    # Write the number of observations above each box in the plot
+    #for tick, label in zip(x, bp.get_xticklabels()):
+    #    bp.text(tick+1, ymax+0.05*ymax, noofobs[tick], horizontalalignment='center')
+    
+    # Add number of observations to xticklabels
+    xticklabels = []
+    for tick, label in zip(x, bp.get_xticklabels()):
+        #xticklabels += [label.get_text() + " (n=" + str(noofobs[tick]) + ")"]
+        
+        region_name = region_names[np.where(region_values == np.int64(label.get_text()))[0][0]]
+        
+        region_text_space = [" " for s in range(36)]
+        
+        if len(region_name) > len(region_text_space):
+            region_name = region_name[0:len(region_text_space)]
+            region_text_space[0:len(region_name)] = region_name
+            region_text_space[-3:] = "..."
+        else:
+            region_text_space[0:len(region_name)] = region_name
+        region_text = "".join(region_text_space)
+        description_text = "(" + format(noofobs[tick], '02d') + ") " + region_text
+        #print(description_text + "|")
+        
+        xticklabels += [description_text]
+    # Update the histogram plot with the new xticklabels
+    bp.set_xticklabels(xticklabels)
+    
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    # Used as a placement for title
+    bp.text((tick//2)+1, ymax+0.2*ymax, title, horizontalalignment='center')
+    # Second twin y axis
+    ax_sec = ax.twinx()
+    ax_sec.set_yticklabels([])
+    ax_sec.yaxis.set_ticks_position('none')
+    ax_sec.set_ylabel(ylabel2, color='b')
+    
+    # Return top medians df for further analysis
+    to_return = selected_data.median()
+    
+    # Set the index elements 
+    # (here the region values originally being string) 
+    # to uint64 for compatibility with visualize_regions()
+    to_return.index = to_return.index.astype(np.uint64)
+    return to_return
+
+def sorted_medians(df, \
+                   region_values, \
+                   region_names, \
+                   region_names_to_exclude, \
+                   ascending=False, \
+                   top=20):
+    # Drop excluded regions
+    df = \
+    df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)
+    # Calculate medians
+    medians_df = df.median()
+    # Sort the medians
+    medians_df.sort_values(ascending=ascending, inplace=True)
+    # Show the data according to the sorted medians
+    sorted_df = df[medians_df.index]
+    
+    if top=="all":
+        selected_data = sorted_df
+    else:
+        # Pick top top highest columns after descending median
+        selected_data = sorted_df[sorted_df.keys()[0:top]]
+    
+    # Return top medians df for further analysis
+    to_return = selected_data.median()
+    
+    # Set the index elements 
+    # (here the region values originally being string) 
+    # to uint64 for compatibility with visualize_regions()
+    to_return.index = to_return.index.astype(np.uint64)
+    return to_return
+
+def sorted_means(df, \
+                   region_values, \
+                   region_names, \
+                   region_names_to_exclude, \
+                   ascending=False, \
+                   top=20):
+    # Drop excluded regions
+    df = \
+    df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)
+    # Calculate medians
+    means_df = df.mean()
+    # Sort the medians
+    means_df.sort_values(ascending=ascending, inplace=True)
+    # Show the data according to the sorted medians
+    sorted_df = df[means_df.index]
+    
+    if top=="all":
+        selected_data = sorted_df
+    else:
+        # Pick top top highest columns after descending median
+        selected_data = sorted_df[sorted_df.keys()[0:top]]
+    
+    # Return top medians df for further analysis
+    to_return = selected_data.mean()
+    
     # Set the index elements 
     # (here the region values originally being string) 
     # to uint64 for compatibility with visualize_regions()
@@ -352,9 +518,13 @@ def render_regions_set_to_pngs(regions_df, \
     return png_file_1, png_file_2, png_file_3
 
 def sorted_boxplot_heatmap_figure(df_1, \
+                                  df_1_rcbv, \
                                   df_2, \
-                                  df_3, 
+                                  df_2_rcbv, \
+                                  df_3, \
+                                  df_3_rcbv, \
                                   df_4, \
+                                  df_4_rcbv, \
                                   ylabel_1, \
                                   ylabel_2, \
                                   ylabel_3, \
@@ -364,6 +534,9 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                   labels_dims, \
                                   CBV_out_dir, \
                                   rendered_image_files_list, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
                                   top = "all", \
                                   render_pngs = True, \
                                   windowMin = 0, \
@@ -381,7 +554,11 @@ def sorted_boxplot_heatmap_figure(df_1, \
     
     ax1 = plt.subplot(gs1[0, :])
     medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
+                                                      df_1_rcbv, \
                                        ax1, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
                                        ylabel2=ylabel_1, \
                                        ylabel="", \
                                        title="", \
@@ -389,29 +566,42 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                        top=top)
     ax2 = plt.subplot(gs1[1, :])
     medians_df_2 = sorted_boxplot_histogram_distances(df_2, \
+                                                      df_2_rcbv, \
                                        ax2, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
                                        ylabel2=ylabel_2, \
                                        ylabel="", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
+
     ax3 = plt.subplot(gs1[2, :])
     medians_df_3 = sorted_boxplot_histogram_distances(df_3, \
+                                                      df_3_rcbv, \
                                        ax3, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
                                        ylabel2=ylabel_3, \
                                        ylabel="", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
+
     ax4 = plt.subplot(gs1[3, :])
     medians_df_4 = sorted_boxplot_histogram_distances(df_4, \
+                                                      df_4_rcbv, \
                                        ax4, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
                                        ylabel2=ylabel_4, \
                                        ylabel="", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
-    
     
     gs2 = gridspec.GridSpec(4, 3)
     gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
@@ -613,6 +803,593 @@ def sorted_boxplot_heatmap_figure(df_1, \
     # Supertitle
     fig.suptitle("rCBV change between TOPUP and EPIC corrections")
     #fig.suptitle("rCBV change between corrections according to " + distance_name + " distance")
+    #plt.subplots_adjust(wspace=0)
+    #fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.5)
+    #fig.subplots_adjust(left=0.3, bottom=0.3, right=0.3, top=0.3, wspace=0.3, hspace=0.3)
+    #fig.tight_layout()
+    
+    return rendered_image_files_list
+
+def sorted_boxplot_heatmap_figure_distances(df_1, \
+                                    df_1_rcbv, \
+                                    df_2, \
+                                    df_2_rcbv, \
+                                    df_3, \
+                                    df_3_rcbv, \
+                                    df_4, \
+                                    df_4_rcbv, \
+                                  ylabel_1, \
+                                  ylabel_2, \
+                                  ylabel_3, \
+                                  ylabel_4, \
+                                  distance_name, \
+                                  labels_data, \
+                                  labels_dims, \
+                                  CBV_out_dir, \
+                                  rendered_image_files_list, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  top = "all", \
+                                  render_pngs = True, \
+                                  windowMin = 0, \
+                                  windowMax = 1*0.8, \
+                                  interpolation = "nearest", \
+                                  cmap = "hot", \
+                                  blur_3d = False, \
+                                  blur_3d_sigma = 1, \
+                                  method_comparison = False):
+    
+    fig = plt.figure(figsize=np.array([9, 10]))
+    
+    gs1 = gridspec.GridSpec(4, 3)
+    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    ax1 = plt.subplot(gs1[0, :])
+    medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
+                                                      df_1_rcbv, \
+                                       ax1, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    
+    #ax2 = plt.subplot(gs1[1, :])
+    medians_df_2 = sorted_medians(df_2, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  top=top)
+    
+    ax3 = plt.subplot(gs1[2, :])
+    medians_df_3 = sorted_boxplot_histogram_distances(df_3, \
+                                                      df_3_rcbv, \
+                                       ax3, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    #ax4 = plt.subplot(gs1[3, :])
+    medians_df_4 = sorted_medians(df_4, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  top=top)
+    
+    
+    gs2 = gridspec.GridSpec(4, 3)
+    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    
+    if render_pngs:
+        rendered_image_files_list = []
+    
+    
+    # Render pngs for medians_df_1
+    if render_pngs:
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_1, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r1", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r1_png_file_1]
+        rendered_image_files_list += [r1_png_file_2]
+        rendered_image_files_list += [r1_png_file_3]
+    else:
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        rendered_image_files_list[0], \
+        rendered_image_files_list[1], \
+        rendered_image_files_list[2]
+        
+    ax5 = plt.subplot(gs2[0, 0])
+    png_1=mpimg.imread(r1_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    
+    ax6 = plt.subplot(gs2[0, 1])
+    png_2=mpimg.imread(r1_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax7 = plt.subplot(gs2[0, 2])
+    png_3=mpimg.imread(r1_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    # Render pngs for medians_df_2
+    if render_pngs:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_2, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r2", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r2_png_file_1]
+        rendered_image_files_list += [r2_png_file_2]
+        rendered_image_files_list += [r2_png_file_3]
+    else:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        rendered_image_files_list[3], \
+        rendered_image_files_list[4], \
+        rendered_image_files_list[5]
+    
+    ax8 = plt.subplot(gs2[1, 0])
+    png_1=mpimg.imread(r2_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    
+    ax9 = plt.subplot(gs2[1, 1])
+    png_2=mpimg.imread(r2_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax10 = plt.subplot(gs2[1, 2])
+    png_3=mpimg.imread(r2_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for medians_df_3
+    if render_pngs:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_3, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r3", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r3_png_file_1]
+        rendered_image_files_list += [r3_png_file_2]
+        rendered_image_files_list += [r3_png_file_3]
+    else:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        rendered_image_files_list[6], \
+        rendered_image_files_list[7], \
+        rendered_image_files_list[8]
+    
+    ax11 = plt.subplot(gs2[2, 0])
+    png_1=mpimg.imread(r3_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    
+    ax12 = plt.subplot(gs2[2, 1])
+    png_2=mpimg.imread(r3_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax13 = plt.subplot(gs2[2, 2])
+    png_3=mpimg.imread(r3_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for medians_df_4
+    if render_pngs:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_4, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r4", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r4_png_file_1]
+        rendered_image_files_list += [r4_png_file_2]
+        rendered_image_files_list += [r4_png_file_3]
+    else:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        rendered_image_files_list[9], \
+        rendered_image_files_list[10], \
+        rendered_image_files_list[11]
+    
+    ax14 = plt.subplot(gs2[3, 0])
+    png_1=mpimg.imread(r4_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.title("axial \ninferior-superior", y=-0.6)
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    
+    ax15 = plt.subplot(gs2[3, 1])
+    png_2=mpimg.imread(r4_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    plt.title("sagittal \nright-left \nradiolog", y=-0.6)
+    
+    ax16 = plt.subplot(gs2[3, 2])
+    png_3=mpimg.imread(r4_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    plt.title("mixed \nright-left \nradiolog \nposterior-anterior", y=-0.6)
+    
+    # Common x axis
+    #fig.text(0.5, 0.04, 'common X', ha='center')
+    # Common y axis
+    #fig.text(0.01, 0.5, distance_name + " distance", va="center", rotation="vertical")
+    # Box plots supertitle
+    #fig.text(0.135, 0.975, "Top " + str(top) + " changing regions")
+    # Images supertitle
+    #if method_comparison:
+    #    fig.text(0.6, 0.95, "Regions most different between correction \nmethods. Based on all median values")
+    #else:
+    #    fig.text(0.6, 0.95, "Regions most affected \nby correction. Based on all median values")
+    
+    # Supertitle
+    #fig.suptitle("rCBV change between TOPUP and EPIC corrections")
+    fig.suptitle("rCBV histogram distance between corrections according to " + distance_name + " distance")
+    #plt.subplots_adjust(wspace=0)
+    #fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.5)
+    #fig.subplots_adjust(left=0.3, bottom=0.3, right=0.3, top=0.3, wspace=0.3, hspace=0.3)
+    #fig.tight_layout()
+    
+    return rendered_image_files_list
+
+def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
+                                    df_2_rcbv, \
+                                    df_3_rcbv, \
+                                    df_4_rcbv, \
+                                  ylabel_1, \
+                                  ylabel_2, \
+                                  ylabel_3, \
+                                  ylabel_4, \
+                                  distance_name, \
+                                  labels_data, \
+                                  labels_dims, \
+                                  CBV_out_dir, \
+                                  rendered_image_files_list, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  ascending1=False, \
+                                  ascending2=False, \
+                                  ascending3=False, \
+                                  ascending4=False, \
+                                  top = "all", \
+                                  render_pngs = True, \
+                                  windowMin = 0, \
+                                  windowMax = 1*0.8, \
+                                  interpolation = "nearest", \
+                                  cmap = "hot", \
+                                  blur_3d = False, \
+                                  blur_3d_sigma = 1, \
+                                  method_comparison = False):
+    
+    fig = plt.figure(figsize=np.array([9, 10]))
+    
+    gs1 = gridspec.GridSpec(4, 3)
+    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    ax1 = plt.subplot(gs1[0, :])
+    medians_df_1 = sorted_boxplot_relative_rcbv_change(df_1_rcbv, \
+                                       ax1, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending1, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    
+    #ax2 = plt.subplot(gs1[1, :])
+    medians_df_2 = sorted_medians(df_2_rcbv, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  ascending=ascending2, \
+                                  top=top)
+    
+    ax3 = plt.subplot(gs1[2, :])
+    medians_df_3 = sorted_boxplot_relative_rcbv_change(df_3_rcbv, \
+                                       ax3, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending3, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    #ax4 = plt.subplot(gs1[3, :])
+    medians_df_4 = sorted_medians(df_4_rcbv, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  ascending=ascending4, \
+                                  top=top)
+    
+    
+    if ascending1:
+        medians_df_1 = 1/medians_df_1
+    if ascending2:
+        medians_df_2 = 1/medians_df_2
+    if ascending3:
+        medians_df_3 = 1/medians_df_3
+    if ascending4:
+        medians_df_4 = 1/medians_df_4
+    
+    gs2 = gridspec.GridSpec(4, 3)
+    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    
+    
+    if render_pngs:
+        rendered_image_files_list = []
+    
+    
+    # Render pngs for medians_df_1
+    if render_pngs:
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_1, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r1", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r1_png_file_1]
+        rendered_image_files_list += [r1_png_file_2]
+        rendered_image_files_list += [r1_png_file_3]
+    else:
+        r1_png_file_1, \
+        r1_png_file_2, \
+        r1_png_file_3 = \
+        rendered_image_files_list[0], \
+        rendered_image_files_list[1], \
+        rendered_image_files_list[2]
+        
+    ax5 = plt.subplot(gs2[0, 0])
+    png_1=mpimg.imread(r1_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    
+    ax6 = plt.subplot(gs2[0, 1])
+    png_2=mpimg.imread(r1_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax7 = plt.subplot(gs2[0, 2])
+    png_3=mpimg.imread(r1_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    # Render pngs for medians_df_2
+    if render_pngs:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_2, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r2", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r2_png_file_1]
+        rendered_image_files_list += [r2_png_file_2]
+        rendered_image_files_list += [r2_png_file_3]
+    else:
+        r2_png_file_1, \
+        r2_png_file_2, \
+        r2_png_file_3 = \
+        rendered_image_files_list[3], \
+        rendered_image_files_list[4], \
+        rendered_image_files_list[5]
+    
+    ax8 = plt.subplot(gs2[1, 0])
+    png_1=mpimg.imread(r2_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    
+    ax9 = plt.subplot(gs2[1, 1])
+    png_2=mpimg.imread(r2_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax10 = plt.subplot(gs2[1, 2])
+    png_3=mpimg.imread(r2_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for medians_df_3
+    if render_pngs:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_3, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r3", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r3_png_file_1]
+        rendered_image_files_list += [r3_png_file_2]
+        rendered_image_files_list += [r3_png_file_3]
+    else:
+        r3_png_file_1, \
+        r3_png_file_2, \
+        r3_png_file_3 = \
+        rendered_image_files_list[6], \
+        rendered_image_files_list[7], \
+        rendered_image_files_list[8]
+    
+    ax11 = plt.subplot(gs2[2, 0])
+    png_1=mpimg.imread(r3_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    
+    ax12 = plt.subplot(gs2[2, 1])
+    png_2=mpimg.imread(r3_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    
+    ax13 = plt.subplot(gs2[2, 2])
+    png_3=mpimg.imread(r3_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    
+    
+    # Render pngs for medians_df_4
+    if render_pngs:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        render_regions_set_to_pngs(medians_df_4, \
+                                   labels_data, \
+                                   labels_dims, \
+                                   CBV_out_dir, \
+                                   png_prefix=distance_name + "-r4", \
+                                   interpolation=interpolation, \
+                                   cmap=cmap, \
+                                   windowMin=windowMin, \
+                                   windowMax=windowMax, \
+                                   blur_3d=blur_3d, \
+                                   blur_3d_sigma=blur_3d_sigma)
+        
+        rendered_image_files_list += [r4_png_file_1]
+        rendered_image_files_list += [r4_png_file_2]
+        rendered_image_files_list += [r4_png_file_3]
+    else:
+        r4_png_file_1, \
+        r4_png_file_2, \
+        r4_png_file_3 = \
+        rendered_image_files_list[9], \
+        rendered_image_files_list[10], \
+        rendered_image_files_list[11]
+    
+    ax14 = plt.subplot(gs2[3, 0])
+    png_1=mpimg.imread(r4_png_file_1)
+    plt.imshow(png_1, aspect="equal")
+    plt.axis("off")
+    plt.title("axial \ninferior-superior", y=-0.6)
+    plt.text(x=-150, y=772 + 772//4, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    
+    ax15 = plt.subplot(gs2[3, 1])
+    png_2=mpimg.imread(r4_png_file_2)
+    plt.imshow(png_2, aspect="equal")
+    plt.axis("off")
+    plt.title("sagittal \nright-left \nradiolog", y=-0.6)
+    
+    ax16 = plt.subplot(gs2[3, 2])
+    png_3=mpimg.imread(r4_png_file_3)
+    plt.imshow(png_3, aspect="equal")
+    plt.axis("off")
+    plt.title("mixed \nright-left \nradiolog \nposterior-anterior", y=-0.6)
+    
+    # Common x axis
+    #fig.text(0.5, 0.04, 'common X', ha='center')
+    # Common y axis
+    #fig.text(0.01, 0.5, distance_name + " distance", va="center", rotation="vertical")
+    # Box plots supertitle
+    #fig.text(0.135, 0.975, "Top " + str(top) + " changing regions")
+    # Images supertitle
+    #if method_comparison:
+    #    fig.text(0.6, 0.95, "Regions most different between correction \nmethods. Based on all median values")
+    #else:
+    #    fig.text(0.6, 0.95, "Regions most affected \nby correction. Based on all median values")
+    
+    # Supertitle
+    if ascending1 and ascending2 and ascending3 and ascending4:
+        fig.suptitle("rCBV decrease by corrections")
+    else:
+        fig.suptitle("rCBV increase by corrections")
+    if method_comparison:
+        fig.suptitle("rCBV increase and decrease between TOPUP and EPIC corrections")
     #plt.subplots_adjust(wspace=0)
     #fig.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.5)
     #fig.subplots_adjust(left=0.3, bottom=0.3, right=0.3, top=0.3, wspace=0.3, hspace=0.3)
