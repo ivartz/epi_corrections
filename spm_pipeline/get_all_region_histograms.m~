@@ -96,8 +96,7 @@ epic_e2_CBV_dirs = epic_e2_CBV_dirs(2, :);
 % is the number of unique values except 0.
 %num_regions = length(unique(regions_data)) - 1;
 %num_regions = 134; % This is the number of brain regions in the MNI regions template form SPM
-num_regions = 71; % This is the number of unique regions in resliced MNI regions file 
-% (except 0) where left and right parts have been merged
+%num_regions = 134; % This is the number of brain regions in the MNI regions template form SPM
 
 % The histogram edges that is used
 hist_edges = hist_min_value:((hist_max_value - hist_min_value)/hist_num_cells):hist_max_value;
