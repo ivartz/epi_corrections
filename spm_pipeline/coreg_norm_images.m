@@ -8,26 +8,29 @@ function coreg_norm_images(epi_corrections_out_dir)
 % NOTE: THIS NEEDS TO BE CHANGED
 regions_file = '/media/loek/HDD3TB1/apps/spm12/tpm/labels_Neuromorphometrics.nii';
 
-%epi_corrections_out_dir = '../../epi_corrections_out_2019_04_25';
+%epi_corrections_out_dir = '../../epi_corrections_out_2019_07_02';
 
-%FLAIR_3D_struct_array = dir(strcat(epi_corrections_out_dir, '/FLAIR_3D/*/*/*/*.nii'));
+%here
 FLAIR_3D_struct_array = dir(strcat(epi_corrections_out_dir, '/FLAIR_3D/**/*.nii'));
 
-%EPI_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_raw_DSC/*/*/*/*.nii'));
+%here
 EPI_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_raw_DSC/**/*.nii'));
 EPI_struct_array = EPI_struct_array(~contains({EPI_struct_array.folder}, 'perf'));
 
-%EPI_applytopup_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applytopup/*/*/*/*applytopup_postp.nii'));
+%here
 EPI_applytopup_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applytopup/**/*applytopup_postp.nii'));
-%EPI_applytopup_orf_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applytopup/*/*/*/*field_postp.nii'));
+
+%here
 EPI_applytopup_orf_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applytopup/**/*field_postp.nii'));
 
-%EPI_applyepic_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic/*/*/*/*applyepic.nii'));
+%here
 EPI_applyepic_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic/**/*applyepic.nii'));
-%EPI_applyepic_df_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic/*/*/*/*field_e*.nii'));
+
+%here
 EPI_applyepic_df_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic/**/*field_e*.nii'));
 
-%MNI_region_maps_struct_array = dir(strcat(epi_corrections_out_dir, '/MNI_region_maps/*.nii'));
+%here
+%FLAIR_native_tumor_segments_struct_array = dir(strcat(epi_corrections_out_dir, '/ONCOHabitats_tumor_segments_from_flair_native/**/*.nii.gz'));
 
 %%
 % 2. Run settings.

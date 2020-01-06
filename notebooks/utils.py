@@ -8,6 +8,7 @@ from pathlib import Path
 from scipy.io import loadmat
 from scipy.spatial.distance import euclidean
 from scipy.stats import wasserstein_distance
+from scipy.stats import wilcoxon
 
 def load_mat_files(CBV_out_dir):
     
@@ -191,11 +192,10 @@ def calculate_total_rcbv_change(hists1, hists2, hist_edges_array):
 
 def calculate_relative_rcbv_change(hists1, hists2, hist_edges_array):
     """
-    Calculate total rCBV change by formula (hist2.*hist_edges_array).sum() / (hist1.*hist_edges_array).sum()
+    Calculate relative rCBV change by formula (hist2.*hist_edges_array).sum() / (hist1.*hist_edges_array).sum()
     """
     return pd.concat((hists1, hists2), axis=1, join="inner")\
             .apply(lambda row: (hists2.loc[row.name].values*hist_edges_array.flatten()[1:]).sum() / (hists1.loc[row.name].values*hist_edges_array.flatten()[1:]).sum(), axis=1)
-
 
 def get_cbv_and_labels_paths(raw_e1_CBV_region_histograms,\
                                 raw_e1_CBV_dirs,\
@@ -493,3 +493,14 @@ def remove_tumors_from_files(cbv_files, segment_files):
         
         # Save cbv by overwriting original cbv file
         nib.save(cbv_img, cbv_file)
+
+def wilcoxon_signed_rank_test(total_rCBV_change_df):
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wilcoxon.html#r996422d5c98f-4
+    def calculate_p(col):
+        _, p = wilcoxon(col.dropna()) # Removing np.nan
+        return p
+    return total_rCBV_change_df.apply(calculate_p)
+
+def drop_regions_with_few_comparisons(comparisons_df, num_comparisons_below=10):
+    return comparisons_df.drop(columns=comparisons_df.keys()[comparisons_df.notna().sum() < num_comparisons_below])
+

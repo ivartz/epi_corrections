@@ -105,9 +105,47 @@ def find_label_files(corrections_base_directory):
     
     return raw_label_files_e1, topup_label_files_e1, epic_label_files_e1, raw_label_files_e2, topup_label_files_e2, epic_label_files_e2
 
+def find_label_files_lrmerged(corrections_base_directory):
+
+    # Gradient Echo nrCBV (e1)
+
+    raw_label_files_e1 = \
+    [tuple3[0] + "/r_e1_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("r_e1_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+
+    topup_label_files_e1 = \
+    [tuple3[0] + "/r_e1_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("r_e1_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+
+    epic_label_files_e1 = \
+    [tuple3[0] + "/r_e1_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("r_e1_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+
+    # Spin Echo nrCBV (e2)
+    
+    raw_label_files_e2 = \
+    [tuple3[0] + "/r_e2_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("r_e2_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+
+    topup_label_files_e2 = \
+    [tuple3[0] + "/r_e2_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("r_e2_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+
+    epic_label_files_e2 = \
+    [tuple3[0] + "/r_e2_labels_Neuromorphometrics_lrmerged.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("r_e2_labels_Neuromorphometrics_lrmerged.nii" in  tuple3[2])]
+    
+    return raw_label_files_e1, topup_label_files_e1, epic_label_files_e1, raw_label_files_e2, topup_label_files_e2, epic_label_files_e2
+
 def find_segment_files(segment_base_directory):
     segment_files = \
-    [tuple3[0] + "/mni/rSegmentation.nii" \
+    [tuple3[0] + "/mni/Segmentation.nii" \
      for tuple3 in os.walk(segment_base_directory) \
      if ("mni" in  tuple3[1])]
     return segment_files

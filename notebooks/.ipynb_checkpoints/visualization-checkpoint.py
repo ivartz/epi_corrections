@@ -1,6 +1,6 @@
 from spimagine import volshow, volfig
 import numpy as np
-from utils import xyz_to_zyx, load_nifti, preprocess_histograms
+from utils import xyz_to_zyx, load_nifti, preprocess_histograms, drop_regions_with_few_comparisons
 import pandas as pd
 import matplotlib
 #matplotlib.use('Qt5Agg')
@@ -12,6 +12,11 @@ import matplotlib.image as mpimg
 import matplotlib.gridspec as gridspec
 from spimagine.models.imageprocessor import BlurProcessor
 from spimagine.utils.quaternion import Quaternion
+import sys
+# activate latex text rendering
+#from matplotlib import rc
+#rc('text', usetex=True)
+#matplotlib.rcParams['savefig.facecolor'] = (173/255, 216/255, 230/255)
 
 def spimagine_show_volume_numpy(numpy_array, stackUnits=(1, 1, 1), interpolation="nearest", cmap="grays"):
     # Spimagine OpenCL volume renderer.
@@ -224,6 +229,8 @@ def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, a
     all_distances_medians_df.sort_values(ascending=False, inplace=True)
     # Show the data according to the sorted medians
     all_distances_sorted_df = all_distances_df[all_distances_medians_df.index]
+    # Remove regions if number of observations is less than 10
+    all_distances_sorted_df = drop_regions_with_few_comparisons(all_distances_sorted_df, num_comparisons_below=10)
     # --for relative rcbv
     # Calculate medians
     all_relative_rcbv_medians_df = all_relative_rcbv_df.median()
@@ -235,13 +242,19 @@ def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, a
         selected_data = all_distances_sorted_df[all_distances_sorted_df.keys()[0:top]]
     
     # ymax used later for correct placement of title text
+    ax.set_ylim(auto=True)
+    """
     _, ymax = ax.get_ylim()
-    this_ymax = selected_data.max().max()
+    this_ymax = selected_data.median().max()
     if ymax == 1 :
         # Replace the default value
         ax.set_ylim(top=this_ymax)
+    """
     _, ymax = ax.get_ylim()
         
+    # Create boxplot
+    # Reverse selected data
+    selected_data = selected_data[reversed(selected_data.keys())]
     # Create boxplot
     bp = selected_data.boxplot(rot=-90, ax=ax, grid=False)
     #bp = selected_data.boxplot(rot=-55, ax=ax, grid=False)
@@ -262,21 +275,63 @@ def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, a
         
         region_median_relative_rcbv_change = all_relative_rcbv_medians_df.loc[label.get_text()]
         
-        region_text_space = [" " for s in range(30)] # 36
+        if region_name[0:len("Left & right")] == "Left & right":
+            region_name = region_name[len("Left & right"):len(region_name)]
+        
+        region_text_space = [" " for s in range(30-len("Left & right"))]
+        
+        #region_text_space = [" " for s in range(30)] # 36
         
         if len(region_name) > len(region_text_space):
-            region_name = region_name[0:len(region_text_space)]
-            region_text_space[0:len(region_name)] = region_name
-            region_text_space[-3:] = "..."
+            space_indexes = np.where(np.array(list(region_name)) == " ")[0]
+            if len(space_indexes) > 1 and space_indexes[-2] != 0:
+                space_index = space_indexes[-2]
+            elif len(space_indexes) == 1 and space_indexes[-1] != 0:
+                space_index = len(region_name)-1
+            else:
+                space_index = space_indexes[-1]
+            line1 = region_name[0:space_index] + "\n"
+            line2 = region_name[space_index+1:]
+            #print("---")
+            #print(space_index)
+            #print(line1)
+            #print("--")
+            #print(line2)
+            #print("---")
+            #region_text_space[0:len(line1 + line2)] = line1 + line2
+            #region_name = region_name[0:len(region_text_space)]
+            #region_text_space[0:len(region_name)] = region_name
+            #region_text_space[-3:] = "..."
         else:
-            region_text_space[0:len(region_name)] = region_name
-        region_text = "".join(region_text_space)
-        description_text = str(tick+1) + ". (n=" + format(noofobs[tick], '02d') + ") " + region_text #+ " {0:.3f}".format(region_median_relative_rcbv_change)
+            line1 = region_name
+            line2 = ""
+            #region_text_space[0:len(region_name)] = region_name
+        
+        # Some cleaning:
+        # Remove first char if space " "
+        # Set first char uppercase if lowercase
+        if line1[0] == " ":
+            line1 = "".join(list(line1[1:]))
+        if line1[0].islower():
+            line1 = "".join([line1[0].upper()]+list(line1[1:]))
+        
+        #region_text = "".join(region_text_space)
+        #number_and_noofobs = str(tick+1) + ". (n=" + format(noofobs[tick], '02d') + ") "
+        #print(number_and_noofobs)
+        #print(len(number_and_noofobs))
+        #description_text = number_and_noofobs + line1 + "".join([" " for s in range(len(number_and_noofobs)+7)]) + line2 #+ " {0:.3f}".format(region_median_relative_rcbv_change)
+        tick_text = str(selected_data.shape[1]-tick) + ". "
+        if line2 == "":
+            description_text = tick_text + line1 + " " + "(n=" + \
+            format(noofobs[tick], '02d') + ")"
+        else:
+            description_text = tick_text + line1 + "".join([" " for s in range(len(tick_text)+1)]) + line2 + " (n=" + \
+            format(noofobs[tick], '02d') + ")"
         #print(description_text + "|")
         
         xticklabels += [description_text]
     # Update the histogram plot with the new xticklabels
-    bp.set_xticklabels(xticklabels)
+    bp.set_xticklabels(xticklabels, {'fontsize': 12}, multialignment="left")
     
     plt.xlabel(xlabel)
     #bp.set_ylabel(ylabel, rotation=-90)
@@ -289,6 +344,11 @@ def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, a
     ax_sec.yaxis.set_ticks_position('none')
     ax_sec.set_ylabel(ylabel2, color='b')
     
+    # Add mean(medians) + 0.96 * std(medians) line
+    bp.plot(x+1, \
+            [all_distances_sorted_df.median().mean() + 0.96 * all_distances_sorted_df.median().std()]*len(x), \
+           linestyle="--")
+    
     # Return top medians df for further analysis
     to_return = selected_data.median()
     
@@ -298,37 +358,66 @@ def sorted_boxplot_histogram_distances(all_distances_df, all_relative_rcbv_df, a
     to_return.index = to_return.index.astype(np.uint64)
     return to_return
 
-def sorted_boxplot_relative_rcbv_change(all_total_rcbv_df, ax, region_values, region_names, region_names_to_exclude, ascending=False, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+def sorted_boxplot_significant_relative_rcbv_change(all_total_rcbv_df, pvalues_ser, p_alpha, ax, region_values, region_names, region_names_to_exclude, ascending=False, ylabel2="Sorted Box Plot", ylabel="Hellinger distance", title="", xlabel="", top=20):
+    # Number of observations (or) patients in each region before taking Wilcoxon signed rank test on the region
+    #num_observations = drop_regions_with_few_comparisons(all_total_rcbv_df, num_comparisons_below=10).notna().sum()
+    # Exclude regions
     all_total_rcbv_df = \
     all_total_rcbv_df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)    
     # --for relative rcbv
     # Calculate medians
-    all_total_rcbv_medians_df = all_total_rcbv_df.median()
-    all_total_rcbv_medians_df.sort_values(ascending=ascending, inplace=True)
+    #all_total_rcbv_medians_df = all_total_rcbv_df.median() # nb! This skips the np.nan values before median calculation
+    #all_total_rcbv_medians_df.sort_values(ascending=ascending, inplace=True)
     # Show the data according to the sorted medians
-    all_total_rcbv_sorted_df = all_total_rcbv_df[all_total_rcbv_medians_df.index]
+    #all_total_rcbv_sorted_df = all_total_rcbv_df[all_total_rcbv_medians_df.index]
+    # Remove regions if number of observations is less than 10
+    all_total_rcbv_rdropped_df = drop_regions_with_few_comparisons(all_total_rcbv_df, num_comparisons_below=10)
+    all_total_rcbv_medians_rdropped_ser = all_total_rcbv_rdropped_df.median() # Just for joining with pvalues_significant_sorted_ser
+    
+    # Extract significant regions by pvalues_ser and p_alpha
+    #pvalues_significant_ser = pvalues_ser[pvalues_ser < p_alpha]
+    #pvalues_significant_sorted_ser = pvalues_significant_ser.sort_values(ascending=True)
+    
+    #p_values_significant_sorted_joined_df = pvalues_significant_sorted_ser.to_frame().join(all_total_rcbv_medians_rdropped_ser.to_frame(), how="inner", rsuffix='_right')["0"]
+    
+    p_values_joined_ser = pvalues_ser.to_frame().join(all_total_rcbv_medians_rdropped_ser.to_frame(), how="inner", rsuffix='_right')["0"]
+    
+    # Extract significant regions
+    p_values_joined_significant_ser = p_values_joined_ser[p_values_joined_ser < p_alpha/len(p_values_joined_ser)] # Bonferroni correction for multiple tests. https://en.wikipedia.org/wiki/Bonferroni_correction
+    
+    #p_values_joined_significant_ser = \
+    #p_values_joined_ser[[region_value_object for region_value_object in p_values_joined_ser.keys() if p_values_joined_ser[region_value_object] < p_alpha/num_observations[region_value_object]]]
+    
+    p_values_joined_significant_sorted_ser = p_values_joined_significant_ser.sort_values(ascending=True)
     
     if top=="all":
-        selected_data = all_total_rcbv_sorted_df
-    else:
-        # Pick top top highest columns after descending median
-        selected_data = all_total_rcbv_sorted_df[all_total_rcbv_sorted_df.keys()[0:top]]
+        selected_data = all_total_rcbv_rdropped_df
+    elif top=="significant_all":
+        selected_data = all_total_rcbv_rdropped_df[p_values_joined_significant_sorted_ser.index]
+    elif top=="significant_top_10":
+        selected_data = all_total_rcbv_rdropped_df[p_values_joined_significant_sorted_ser.index[0:10]]
     
     # ymax used later for correct placement of title text
+    ax.set_ylim(auto=True)
+    """
     _, ymax = ax.get_ylim()
-    this_ymax = selected_data.max().max()
+    this_ymax = selected_data.median().max()
     if ymax == 1 :
         # Replace the default value
         ax.set_ylim(top=this_ymax)
+    """
     _, ymax = ax.get_ylim()
     
     # Create boxplot
+    # Reverse selected data
+    selected_data = selected_data[reversed(selected_data.keys())]
     bp = selected_data.boxplot(rot=-90, ax=ax, grid=False)
     #bp = selected_data.boxplot(rot=-55, ax=ax, grid=False)
     # A list that is used give x placement of number of observations text
     x = np.arange(selected_data.shape[1])
     # Count the number of observations in each column
     noofobs = selected_data.notna().sum()
+    #print(selected_data.shape)
     # Write the number of observations above each box in the plot
     #for tick, label in zip(x, bp.get_xticklabels()):
     #    bp.text(tick+1, ymax+0.05*ymax, noofobs[tick], horizontalalignment='center')
@@ -340,23 +429,76 @@ def sorted_boxplot_relative_rcbv_change(all_total_rcbv_df, ax, region_values, re
         
         region_name = region_names[np.where(region_values == np.int64(label.get_text()))[0][0]]
         
-        region_text_space = [" " for s in range(36)]
+        if region_name[0:len("Left & right")] == "Left & right":
+            region_name = region_name[len("Left & right"):len(region_name)]
+        
+        region_text_space = [" " for s in range(30-len("Left & right"))]
+        
+        #region_text_space = [" " for s in range(36)]
         
         if len(region_name) > len(region_text_space):
-            region_name = region_name[0:len(region_text_space)]
-            region_text_space[0:len(region_name)] = region_name
-            region_text_space[-3:] = "..."
+            space_indexes = np.where(np.array(list(region_name)) == " ")[0]
+            if len(space_indexes) > 1 and space_indexes[-2] != 0:
+                space_index = space_indexes[-2]
+            elif len(space_indexes) == 1 and space_indexes[-1] != 0:
+                space_index = len(region_name)-1
+            else:
+                space_index = space_indexes[-1]
+            line1 = region_name[0:space_index] + "\n"
+            line2 = region_name[space_index+1:]
+            #region_name = region_name[0:len(region_text_space)]
+            #region_text_space[0:len(region_name)] = region_name
+            #region_text_space[-3:] = "..."
         else:
-            region_text_space[0:len(region_name)] = region_name
-        region_text = "".join(region_text_space)
-        description_text = str(tick+1) + ". (n=" + format(noofobs[tick], '02d') + ") " + region_text
-        #print(description_text + "|")
+            line1 = region_name
+            line2 = ""
         
+        # Some cleaning:
+        # Remove first char if space " "
+        # Set first char uppercase if lowercase
+        if line1[0] == " ":
+            line1 = "".join(list(line1[1:]))
+        if line1[0].islower():
+            line1 = "".join([line1[0].upper()]+list(line1[1:]))
+        
+            #region_text_space[0:len(region_name)] = region_name
+        #region_text = "".join(region_text_space)
+        #description_text = str(tick+1) + ". " + r"\textbf{" + region_text + "}" + "\n    (n=" + \
+        #description_text = str(tick+1) + ". " + region_text + "\n     (n=" + \
+        #format(noofobs[tick], '02d') + ", p=" + "{0:.6f}".format(p_values_joined_significant_sorted_ser[label.get_text()]) + ")"
+        tick_text = str(selected_data.shape[1]-tick) + ". "
+        if line2 == "":
+            description_text = tick_text + line1 + " " + "(n=" + \
+            format(noofobs[tick], '02d') + ")"#+ ", " + "{0:.6f}".format(p_values_joined_ser[label.get_text()]) + "<" + "{0:.6f}".format(p_alpha/len(p_values_joined_ser)) + ")"
+            #format(noofobs[tick], '02d') + ")"
+        else:
+            description_text = tick_text + line1 + "".join([" " for s in range(len(tick_text)+1)]) + line2 + " (n=" + \
+            format(noofobs[tick], '02d') + ")"#+ ", " + "{0:.6f}".format(p_values_joined_ser[label.get_text()]) + "<" + "{0:.6f}".format(p_alpha/len(p_values_joined_ser)) + ")"
+            #format(noofobs[tick], '02d') + ")"
+        #print(description_text + "|")
         xticklabels += [description_text]
     # Update the histogram plot with the new xticklabels
-    bp.set_xticklabels(xticklabels)
+    bp.set_xticklabels(xticklabels, {'fontsize': 12}, multialignment="left")
+    """
+    bp.set_xticklabels(xticklabels, y=ymax)
     
+    # Create offset transform
+    dx = -9/72.; dy = 5/72. 
+    offset = matplotlib.transforms.ScaledTranslation(dx, dy, plt.gcf().dpi_scale_trans)
+
+    # apply offset transform to all x ticklabels.
+    for label in ax.xaxis.get_majorticklabels():
+        label.set_transform(label.get_transform() + offset)
+    """
     plt.xlabel(xlabel)
+    """
+    if ylabel[-len("(A)"):] == "(A)" or ylabel[-len("(A)"):] == "(C)" or ylabel[-len("(A)"):] == " SE":
+        plt.ylabel(ylabel, rotation=-90, labelpad=11, color="red")
+    elif ylabel[-len("(A)"):] == "(B)" or ylabel[-len("(A)"):] == "(D)" or ylabel[-len("(A)"):] == " GE":
+        plt.ylabel(ylabel, rotation=-90, labelpad=11, color="blue")
+    else:
+        plt.ylabel(ylabel, rotation=-90, labelpad=11)
+    """
     plt.ylabel(ylabel, rotation=-90, labelpad=11)
     # Used as a placement for title
     bp.text((tick//2)+1, ymax+0.2*ymax, title, horizontalalignment='center')
@@ -364,7 +506,22 @@ def sorted_boxplot_relative_rcbv_change(all_total_rcbv_df, ax, region_values, re
     ax_sec = ax.twinx()
     ax_sec.set_yticklabels([])
     ax_sec.yaxis.set_ticks_position('none')
-    ax_sec.set_ylabel(ylabel2, color='b')
+    ax_sec.set_ylabel(ylabel2, rotation=-90, fontweight="bold")
+    """
+    if ascending:
+        # Add mean(medians) - 0.96 * std(medians) line
+        bp.plot(x+1, \
+                [all_total_rcbv_rdropped_df.median().mean() - 0.96 * all_total_rcbv_rdropped_df.median().std()]*len(x), \
+               linestyle="--")
+    else:
+        # Add mean(medians) + 0.96 * std(medians) line
+        bp.plot(x+1, \
+                [all_total_rcbv_rdropped_df.median().mean() + 0.96 * all_total_rcbv_rdropped_df.median().std()]*len(x), \
+               linestyle="--")
+    """
+    bp.plot(x+1, \
+            [1]*len(x), \
+            linestyle="--")
     
     # Return top medians df for further analysis
     to_return = selected_data.median()
@@ -390,6 +547,8 @@ def sorted_medians(df, \
     medians_df.sort_values(ascending=ascending, inplace=True)
     # Show the data according to the sorted medians
     sorted_df = df[medians_df.index]
+    # Remove regions if number of observations is less than 10
+    sorted_df = drop_regions_with_few_comparisons(sorted_df, num_comparisons_below=10)
     
     if top=="all":
         selected_data = sorted_df
@@ -397,6 +556,53 @@ def sorted_medians(df, \
         # Pick top top highest columns after descending median
         selected_data = sorted_df[sorted_df.keys()[0:top]]
     
+    # Return top medians df for further analysis
+    to_return = selected_data.median()
+    
+    # Set the index elements 
+    # (here the region values originally being string) 
+    # to uint64 for compatibility with visualize_regions()
+    to_return.index = to_return.index.astype(np.uint64)
+    return to_return
+
+def sorted_medians_significant(df, \
+                               pvalues_ser, \
+                               p_alpha, \
+                               region_values, \
+                               region_names, \
+                               region_names_to_exclude, \
+                               ascending=False, \
+                               top=20):
+    # Drop excluded regions
+    df_excluded_dropped = \
+    df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)
+    # Calculate medians
+    #medians_df = df.median()
+    # Sort the medians
+    #medians_df.sort_values(ascending=ascending, inplace=True)
+    # Show the data according to the sorted medians
+    #sorted_df = df[medians_df.index]
+    # Remove regions if number of observations is less than 10
+    df_excluded_and_few_regions_dropped = drop_regions_with_few_comparisons(df_excluded_dropped, num_comparisons_below=10)
+    ser_medians_excluded_and_few_regions_dropped = df_excluded_and_few_regions_dropped.median()
+    
+    # Extract significant regions by pvalues_ser and p_alpha
+    #pvalues_significant_ser = pvalues_ser[pvalues_ser < p_alpha]
+    #pvalues_significant_sorted_ser = pvalues_significant_ser.sort_values(ascending=True)
+    
+    #p_values_significant_sorted_joined_df = pvalues_significant_sorted_ser.to_frame().join(ser_medians_excluded_and_few_regions_dropped.to_frame(), how="inner", rsuffix='right')["0"]
+    
+    p_values_joined_ser = pvalues_ser.to_frame().join(ser_medians_excluded_and_few_regions_dropped.to_frame(), how="inner", rsuffix='_right')["0"]
+    p_values_joined_significant_ser = p_values_joined_ser[p_values_joined_ser < p_alpha/len(p_values_joined_ser)] # Bonferroni correction for multiple tests. https://en.wikipedia.org/wiki/Bonferroni_correction
+    p_values_joined_significant_sorted_ser = p_values_joined_significant_ser.sort_values(ascending=True)
+    
+    if top=="all":
+        selected_data = df_excluded_and_few_regions_dropped
+    elif top=="significant_all":
+        selected_data = df_excluded_and_few_regions_dropped[p_values_joined_significant_sorted_ser.index]
+    elif top=="significant_top_10":
+        selected_data = df_excluded_and_few_regions_dropped[p_values_joined_significant_sorted_ser.index[0:10]]
+
     # Return top medians df for further analysis
     to_return = selected_data.median()
     
@@ -421,6 +627,8 @@ def sorted_means(df, \
     means_df.sort_values(ascending=ascending, inplace=True)
     # Show the data according to the sorted medians
     sorted_df = df[means_df.index]
+    # Remove regions if number of observations is less than 10
+    sorted_df = drop_regions_with_few_comparisons(sorted_df, num_comparisons_below=10)
     
     if top=="all":
         selected_data = sorted_df
@@ -567,9 +775,10 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                   method_comparison = False):
     
     fig = plt.figure(figsize=np.array([9, 10]))
+    fig.patch.set_facecolor((173/255, 216/255, 230/255))
     
     gs1 = gridspec.GridSpec(4, 3)
-    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs1.update(left=0.08, right=0.48, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     ax1 = plt.subplot(gs1[0, :])
     medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
@@ -623,7 +832,7 @@ def sorted_boxplot_heatmap_figure(df_1, \
                                        top=top)
     
     gs2 = gridspec.GridSpec(4, 2)
-    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs2.update(left=0.52, right=1, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     
     if render_pngs:
@@ -793,13 +1002,13 @@ def sorted_boxplot_heatmap_figure(df_1, \
     png_1=mpimg.imread(r4_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.title("axial \ninferior-superior", y=-0.4)
+    #plt.title("axial \ninferior-superior", y=-0.4)
     
     ax15 = plt.subplot(gs2[3, 1])
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nright-left", y=-0.4)
+    #plt.title("sagittal \nright-left", y=-0.4)
     """
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
@@ -860,9 +1069,10 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
                                   method_comparison = False):
     
     fig = plt.figure(figsize=np.array([9, 10]))
+    fig.patch.set_facecolor((173/255, 216/255, 230/255))
     
     gs1 = gridspec.GridSpec(4, 3)
-    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs1.update(left=0.08, right=0.48, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     ax1 = plt.subplot(gs1[0, :])
     medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
@@ -877,9 +1087,9 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
                                        xlabel="", 
                                        top=top)
     if method_comparison:
-        ax1.set_ylabel("Hellinger distance", rotation=-90, labelpad=11)
+        ax1.set_ylabel("Hellinger distance (A)", rotation=-90, labelpad=11, color="red")
     else:
-        ax1.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax1.set_ylabel(distance_name + " distance (A)", rotation=-90, labelpad=11, color="red")
     
     #ax2 = plt.subplot(gs1[1, :])
     medians_df_2 = sorted_medians(df_2, \
@@ -901,9 +1111,9 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
                                        xlabel="", \
                                        top=top)
     if method_comparison:
-        ax3.set_ylabel("Wasserstein distance", rotation=-90, labelpad=11)
+        ax3.set_ylabel("Wasserstein distance (C)", rotation=-90, labelpad=11, color="red")
     else:
-        ax3.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax3.set_ylabel(distance_name + " distance (C)", rotation=-90, labelpad=11, color="red")
 
     #ax4 = plt.subplot(gs1[3, :])
     medians_df_4 = sorted_medians(df_4, \
@@ -914,7 +1124,7 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
     
     
     gs2 = gridspec.GridSpec(4, 2)
-    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs2.update(left=0.52, right=1, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     
     if render_pngs:
@@ -953,7 +1163,7 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
     png_1=mpimg.imread(r1_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_1, rotation=-90, color="red", fontsize="medium")
     
     ax6 = plt.subplot(gs2[0, 1])
     png_2=mpimg.imread(r1_png_file_2)
@@ -997,7 +1207,7 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
     png_1=mpimg.imread(r2_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
     
     ax9 = plt.subplot(gs2[1, 1])
     png_2=mpimg.imread(r2_png_file_2)
@@ -1042,7 +1252,7 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
     png_1=mpimg.imread(r3_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_3, rotation=-90, color="red", fontsize="medium")
     
     ax12 = plt.subplot(gs2[2, 1])
     png_2=mpimg.imread(r3_png_file_2)
@@ -1087,14 +1297,14 @@ def sorted_boxplot_heatmap_figure_distances(df_1, \
     png_1=mpimg.imread(r4_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.title("axial \ninferior-superior", y=-0.4)
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    #plt.title("axial \ninferior-superior", y=-0.4)
+    plt.text(x=-150, y=772, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
     
     ax15 = plt.subplot(gs2[3, 1])
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nright-left", y=-0.4)
+    #plt.title("sagittal \nright-left", y=-0.4)
     """
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
@@ -1155,9 +1365,11 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
                                   method_comparison = False):
     
     fig = plt.figure(figsize=np.array([9, 10*4]))
+    fig.patch.set_facecolor((173/255, 216/255, 230/255))
+    #matplotlib.rcParams['savefig.facecolor'] = (173/255, 216/255, 230/255)
     
     gs1 = gridspec.GridSpec(4, 3)
-    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs1.update(left=0.08, right=0.48, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     ax1 = plt.subplot(gs1[0, :])
     medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
@@ -1172,9 +1384,9 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
                                        xlabel="", 
                                        top=top)
     if method_comparison:
-        ax1.set_ylabel("Hellinger distance", rotation=-90, labelpad=11)
+        ax1.set_ylabel("Hellinger distance (A)", rotation=-90, labelpad=11, color="red")
     else:
-        ax1.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax1.set_ylabel(distance_name + " distance (A)", rotation=-90, labelpad=11, color="red")
     
     ax2 = plt.subplot(gs1[1, :])
     """
@@ -1196,9 +1408,9 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
                                        xlabel="", 
                                        top=top)
     if method_comparison:
-        ax2.set_ylabel("Hellinger distance", rotation=-90, labelpad=11)
+        ax2.set_ylabel("Hellinger distance (B)", rotation=-90, labelpad=11, color="blue")
     else:
-        ax2.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax2.set_ylabel(distance_name + " distance (B)", rotation=-90, labelpad=11, color="blue")
     
     ax3 = plt.subplot(gs1[2, :])
     medians_df_3 = sorted_boxplot_histogram_distances(df_3, \
@@ -1213,9 +1425,9 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
                                        xlabel="", \
                                        top=top)
     if method_comparison:
-        ax3.set_ylabel("Wasserstein distance", rotation=-90, labelpad=11)
+        ax3.set_ylabel("Wasserstein distance (C)", rotation=-90, labelpad=11, color="red")
     else:
-        ax3.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax3.set_ylabel(distance_name + " distance (C)", rotation=-90, labelpad=11, color="red")
     
     ax4 = plt.subplot(gs1[3, :])
     """
@@ -1237,12 +1449,12 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
                                        xlabel="", \
                                        top=top)
     if method_comparison:
-        ax4.set_ylabel("Wasserstein distance", rotation=-90, labelpad=11)
+        ax4.set_ylabel("Wasserstein distance (D)", rotation=-90, labelpad=11, color="blue")
     else:
-        ax4.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+        ax4.set_ylabel(distance_name + " distance (D)", rotation=-90, labelpad=11, color="blue")
     
     gs2 = gridspec.GridSpec(4, 2)
-    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs2.update(left=0.52, right=1, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     
     if render_pngs:
@@ -1281,7 +1493,7 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
     png_1=mpimg.imread(r1_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_1, rotation=-90, color="red", fontsize="medium")
     
     ax6 = plt.subplot(gs2[0, 1])
     png_2=mpimg.imread(r1_png_file_2)
@@ -1325,7 +1537,7 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
     png_1=mpimg.imread(r2_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
     
     ax9 = plt.subplot(gs2[1, 1])
     png_2=mpimg.imread(r2_png_file_2)
@@ -1370,7 +1582,7 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
     png_1=mpimg.imread(r3_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_3, rotation=-90, color="red", fontsize="medium")
     
     ax12 = plt.subplot(gs2[2, 1])
     png_2=mpimg.imread(r3_png_file_2)
@@ -1415,14 +1627,14 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
     png_1=mpimg.imread(r4_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.title("axial \ninferior-superior", y=-0.4)
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    #plt.title("axial \ninferior-superior", y=-0.4)
+    plt.text(x=-150, y=772, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
     
     ax15 = plt.subplot(gs2[3, 1])
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nright-left", y=-0.4)
+    #plt.title("sagittal \nright-left", y=-0.4)
     """
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
@@ -1453,9 +1665,14 @@ def sorted_boxplot_heatmap_figure_distances_all(df_1, \
     return rendered_image_files_list
 
 def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
-                                    df_2_rcbv, \
-                                    df_3_rcbv, \
-                                    df_4_rcbv, \
+                                       df_2_rcbv, \
+                                       df_3_rcbv, \
+                                       df_4_rcbv, \
+                                       ser_1_pvalues, \
+                                       ser_2_pvalues, \
+                                       ser_3_pvalues, \
+                                       ser_4_pvalues, \
+                                       p_alpha, \
                                   ylabel_1, \
                                   ylabel_2, \
                                   ylabel_3, \
@@ -1483,25 +1700,30 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
                                   method_comparison = False):
     
     fig = plt.figure(figsize=np.array([9, 10]))
+    fig.patch.set_facecolor((173/255, 216/255, 230/255))
     
     gs1 = gridspec.GridSpec(4, 3)
-    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs1.update(left=0.08, right=0.48, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     ax1 = plt.subplot(gs1[0, :])
-    medians_df_1 = sorted_boxplot_relative_rcbv_change(df_1_rcbv, \
+    medians_df_1 = sorted_boxplot_significant_relative_rcbv_change(df_1_rcbv, \
+                                                       ser_1_pvalues, \
+                                                       p_alpha, \
                                        ax1, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending1, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (A)", \
                                        title="", \
                                        xlabel="", 
                                        top=top)
     
     #ax2 = plt.subplot(gs1[1, :])
-    medians_df_2 = sorted_medians(df_2_rcbv, \
+    medians_df_2 = sorted_medians_significant(df_2_rcbv, \
+                                  ser_2_pvalues, \
+                                  p_alpha, \
                                   region_values, \
                                   region_names, \
                                   region_names_to_exclude, \
@@ -1509,19 +1731,23 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
                                   top=top)
     
     ax3 = plt.subplot(gs1[2, :])
-    medians_df_3 = sorted_boxplot_relative_rcbv_change(df_3_rcbv, \
+    medians_df_3 = sorted_boxplot_significant_relative_rcbv_change(df_3_rcbv, \
+                                                       ser_3_pvalues, \
+                                                       p_alpha, \
                                        ax3, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending3, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (C)", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
     #ax4 = plt.subplot(gs1[3, :])
-    medians_df_4 = sorted_medians(df_4_rcbv, \
+    medians_df_4 = sorted_medians_significant(df_4_rcbv, \
+                                  ser_4_pvalues, \
+                                  p_alpha, \
                                   region_values, \
                                   region_names, \
                                   region_names_to_exclude, \
@@ -1538,8 +1764,16 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     if ascending4:
         medians_df_4 = 1/medians_df_4
     
+    # Take away negative or zero relative rCBV change for the rendering
+    #"""
+    medians_df_1 = medians_df_1[medians_df_1 > 1]
+    medians_df_2 = medians_df_2[medians_df_2 > 1]
+    medians_df_3 = medians_df_3[medians_df_3 > 1]
+    medians_df_4 = medians_df_4[medians_df_4 > 1]
+    #"""
+    
     gs2 = gridspec.GridSpec(4, 2)
-    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs2.update(left=0.52, right=1, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     
     if render_pngs:
@@ -1578,7 +1812,7 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     png_1=mpimg.imread(r1_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_1, rotation=-90, color="red", fontsize="medium")
     
     ax6 = plt.subplot(gs2[0, 1])
     png_2=mpimg.imread(r1_png_file_2)
@@ -1622,7 +1856,7 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     png_1=mpimg.imread(r2_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
     
     ax9 = plt.subplot(gs2[1, 1])
     png_2=mpimg.imread(r2_png_file_2)
@@ -1667,7 +1901,7 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     png_1=mpimg.imread(r3_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_3, rotation=-90, color="red", fontsize="medium")
     
     ax12 = plt.subplot(gs2[2, 1])
     png_2=mpimg.imread(r3_png_file_2)
@@ -1712,14 +1946,14 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     png_1=mpimg.imread(r4_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.title("axial \ninferior-superior", y=-0.4)
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    #plt.title("axial \ninferior-superior", y=-0.4)
+    plt.text(x=-150, y=772, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
     
     ax15 = plt.subplot(gs2[3, 1])
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nright-left", y=-0.4)
+    #plt.title("sagittal \nright-left", y=-0.4)
     """
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
@@ -1755,9 +1989,14 @@ def sorted_boxplot_heatmap_figure_rcbv(df_1_rcbv, \
     return rendered_image_files_list
 
 def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
-                                    df_2_rcbv, \
-                                    df_3_rcbv, \
-                                    df_4_rcbv, \
+                                           df_2_rcbv, \
+                                           df_3_rcbv, \
+                                           df_4_rcbv, \
+                                           ser_1_pvalues, \
+                                           ser_2_pvalues, \
+                                           ser_3_pvalues, \
+                                           ser_4_pvalues, \
+                                           p_alpha, \
                                   ylabel_1, \
                                   ylabel_2, \
                                   ylabel_3, \
@@ -1785,77 +2024,71 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
                                   method_comparison = False):
     
     fig = plt.figure(figsize=np.array([9, 10*4]))
+    fig.patch.set_facecolor((173/255, 216/255, 230/255))
     
     gs1 = gridspec.GridSpec(4, 3)
-    gs1.update(left=0.08, right=0.48, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs1.update(left=0.08, right=0.48, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     ax1 = plt.subplot(gs1[0, :])
-    medians_df_1 = sorted_boxplot_relative_rcbv_change(df_1_rcbv, \
+    medians_df_1 = sorted_boxplot_significant_relative_rcbv_change(df_1_rcbv, \
+                                                       ser_1_pvalues, \
+                                                       p_alpha, \
                                        ax1, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending1, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (A)", \
                                        title="", \
                                        xlabel="", 
                                        top=top)
     
     ax2 = plt.subplot(gs1[1, :])
-    """
-    medians_df_2 = sorted_medians(df_2_rcbv, \
-                                  region_values, \
-                                  region_names, \
-                                  region_names_to_exclude, \
-                                  ascending=ascending2, \
-                                  top=top)
-    """
-    medians_df_2 = sorted_boxplot_relative_rcbv_change(df_2_rcbv, \
+    
+    medians_df_2 = sorted_boxplot_significant_relative_rcbv_change(df_2_rcbv, \
+                                                       ser_2_pvalues, \
+                                                       p_alpha, \
                                        ax2, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending2, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (B)", \
                                        title="", \
                                        xlabel="", 
                                        top=top)
     
     ax3 = plt.subplot(gs1[2, :])
-    medians_df_3 = sorted_boxplot_relative_rcbv_change(df_3_rcbv, \
+    medians_df_3 = sorted_boxplot_significant_relative_rcbv_change(df_3_rcbv, \
+                                                       ser_3_pvalues, \
+                                                       p_alpha, \
                                        ax3, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending3, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (C)", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
     ax4 = plt.subplot(gs1[3, :])
-    """
-    medians_df_4 = sorted_medians(df_4_rcbv, \
-                                  region_values, \
-                                  region_names, \
-                                  region_names_to_exclude, \
-                                  ascending=ascending4, \
-                                  top=top)
-    """
-    medians_df_4 = sorted_boxplot_relative_rcbv_change(df_4_rcbv, \
+    
+    medians_df_4 = sorted_boxplot_significant_relative_rcbv_change(df_4_rcbv, \
+                                                       ser_4_pvalues, \
+                                                       p_alpha, \
                                        ax4, \
                                        region_values, \
                                        region_names, \
                                        region_names_to_exclude, \
                                        ascending=ascending4, \
                                        ylabel2="", \
-                                       ylabel="rCBV change", \
+                                       ylabel="rCBV change (D)", \
                                        title="", \
                                        xlabel="", \
                                        top=top)
-    
     
     if ascending1:
         medians_df_1 = 1/medians_df_1
@@ -1866,8 +2099,14 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     if ascending4:
         medians_df_4 = 1/medians_df_4
     
+    # Take away negative or zero relative rCBV change for the rendering
+    medians_df_1 = medians_df_1[medians_df_1 > 1]
+    medians_df_2 = medians_df_2[medians_df_2 > 1]
+    medians_df_3 = medians_df_3[medians_df_3 > 1]
+    medians_df_4 = medians_df_4[medians_df_4 > 1]
+    
     gs2 = gridspec.GridSpec(4, 2)
-    gs2.update(left=0.52, right=0.99, bottom=0.07, top=0.92, hspace=0.5, wspace=0)
+    gs2.update(left=0.52, right=1, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
     
     
     if render_pngs:
@@ -1906,7 +2145,7 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     png_1=mpimg.imread(r1_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_1, rotation=-90, color="blue", fontsize="medium")
     
     ax6 = plt.subplot(gs2[0, 1])
     png_2=mpimg.imread(r1_png_file_2)
@@ -1950,7 +2189,7 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     png_1=mpimg.imread(r2_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_2, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_2, rotation=-90, color="red", fontsize="medium")
     
     ax9 = plt.subplot(gs2[1, 1])
     png_2=mpimg.imread(r2_png_file_2)
@@ -1995,7 +2234,7 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     png_1=mpimg.imread(r3_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
+    plt.text(x=-150, y=772, s=ylabel_3, rotation=-90, color="blue", fontsize="medium")
     
     ax12 = plt.subplot(gs2[2, 1])
     png_2=mpimg.imread(r3_png_file_2)
@@ -2040,14 +2279,14 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     png_1=mpimg.imread(r4_png_file_1)
     plt.imshow(png_1, aspect="equal")
     plt.axis("off")
-    plt.title("axial \ninferior-superior", y=-0.4)
-    plt.text(x=-150, y=772 + 772//10, s=ylabel_4, rotation=-90, color="blue", fontsize="medium")
+    #plt.title("axial \ninferior-superior", y=-0.4)
+    plt.text(x=-150, y=772, s=ylabel_4, rotation=-90, color="red", fontsize="medium")
     
     ax15 = plt.subplot(gs2[3, 1])
     png_2=mpimg.imread(r4_png_file_2)
     plt.imshow(png_2, aspect="equal")
     plt.axis("off")
-    plt.title("sagittal \nright-left", y=-0.4)
+    #plt.title("sagittal \nright-left", y=-0.4)
     """
     ax16 = plt.subplot(gs2[3, 2])
     png_3=mpimg.imread(r4_png_file_3)
@@ -2081,3 +2320,253 @@ def sorted_boxplot_heatmap_figure_rcbv_all(df_1_rcbv, \
     #fig.tight_layout()
     
     return rendered_image_files_list
+
+def sorted_boxplot_figure_rcbv(df_1_rcbv, \
+                                       df_2_rcbv, \
+                                       df_3_rcbv, \
+                                       df_4_rcbv, \
+                                       ser_1_pvalues, \
+                                       ser_2_pvalues, \
+                                       ser_3_pvalues, \
+                                       ser_4_pvalues, \
+                                       p_alpha, \
+                                  ylabel_1, \
+                                  ylabel_2, \
+                                  ylabel_3, \
+                                  ylabel_4, \
+                                  distance_name, \
+                                  labels_data, \
+                                  labels_dims, \
+                                  CBV_out_dir, \
+                                  rendered_image_files_list, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  ascending1=False, \
+                                  ascending2=False, \
+                                  ascending3=False, \
+                                  ascending4=False, \
+                                  top = "all", \
+                                  render_pngs = True, \
+                                  windowMin = 0, \
+                                  windowMax = 1*0.8, \
+                                  interpolation = "nearest", \
+                                  cmap = "hot", \
+                                  blur_3d = False, \
+                                  blur_3d_sigma = 1, \
+                                  method_comparison = False):
+    
+    fig = plt.figure(figsize=np.array([9, 10]))
+    #fig.patch.set_facecolor((173/255, 216/255, 230/255))
+    
+    gs1 = gridspec.GridSpec(4, 3)
+    #gs1.update(left=0.07, right=0.45, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    gs1.update(left=0.55, right=0.98, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    
+    ax1 = plt.subplot(gs1[0, :])
+    medians_df_1 = sorted_boxplot_significant_relative_rcbv_change(df_1_rcbv, \
+                                                       ser_1_pvalues, \
+                                                       p_alpha, \
+                                       ax1, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending1, \
+                                       ylabel2=ylabel_1, \
+                                       ylabel="rCBV change", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    #ax1_sec = ax1.twinx()
+    #ax1_sec.set_yticklabels([])
+    #ax1_sec.yaxis.set_ticks_position('none')
+    #ax1_sec.set_ylabel(ylabel_1, rotation=-90)
+    
+    ax2 = plt.subplot(gs1[2, :])
+    medians_df_2 = sorted_boxplot_significant_relative_rcbv_change(df_2_rcbv, \
+                                                       ser_2_pvalues, \
+                                                       p_alpha, \
+                                       ax2, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending2, \
+                                       ylabel2=ylabel_2, \
+                                       ylabel="rCBV change", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    
+    gs2 = gridspec.GridSpec(4, 3)
+    #gs2.update(left=0.55, right=0.98, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    gs2.update(left=0.07, right=0.45, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    
+    ax3 = plt.subplot(gs2[0, :])
+    medians_df_3 = sorted_boxplot_significant_relative_rcbv_change(df_3_rcbv, \
+                                                       ser_3_pvalues, \
+                                                       p_alpha, \
+                                       ax3, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending3, \
+                                       ylabel2=ylabel_3, \
+                                       ylabel="rCBV change", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    
+    ax4 = plt.subplot(gs2[2, :])
+    medians_df_4 = sorted_boxplot_significant_relative_rcbv_change(df_4_rcbv, \
+                                                       ser_4_pvalues, \
+                                                       p_alpha, \
+                                       ax4, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ascending=ascending4, \
+                                       ylabel2=ylabel_4, \
+                                       ylabel="rCBV change", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    return []
+
+def sorted_boxplot_figure_distances(df_1, \
+                                    df_1_rcbv, \
+                                    df_2, \
+                                    df_2_rcbv, \
+                                    df_3, \
+                                    df_3_rcbv, \
+                                    df_4, \
+                                    df_4_rcbv, \
+                                  ylabel_1, \
+                                  ylabel_2, \
+                                  ylabel_3, \
+                                  ylabel_4, \
+                                  distance_name, \
+                                  labels_data, \
+                                  labels_dims, \
+                                  CBV_out_dir, \
+                                  rendered_image_files_list, \
+                                  region_values, \
+                                  region_names, \
+                                  region_names_to_exclude, \
+                                  top = "all", \
+                                  render_pngs = True, \
+                                  windowMin = 0, \
+                                  windowMax = 1*0.8, \
+                                  interpolation = "nearest", \
+                                  cmap = "hot", \
+                                  blur_3d = False, \
+                                  blur_3d_sigma = 1, \
+                                  method_comparison = False):
+    
+    fig = plt.figure(figsize=np.array([10, 10]))
+    #fig.patch.set_facecolor((173/255, 216/255, 230/255))
+    
+    gs1 = gridspec.GridSpec(4, 3)
+    #gs1.update(left=0.07, right=0.45, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    gs1.update(left=0.55, right=0.98, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    
+    ax1 = plt.subplot(gs1[0, :])
+    medians_df_1 = sorted_boxplot_histogram_distances(df_1, \
+                                                      df_1_rcbv, \
+                                       ax1, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    ax1_sec = ax1.twinx()
+    ax1_sec.set_yticklabels([])
+    ax1_sec.yaxis.set_ticks_position('none')
+    ax1_sec.set_ylabel(ylabel_1, rotation=-90, fontweight="bold")
+    if method_comparison:
+        #ax1.set_ylabel("Hellinger distance " + ylabel_1, rotation=-90, labelpad=11, position=(0,0.2))
+        ax1.set_ylabel("Hellinger distance", rotation=-90, labelpad=11)
+    else:
+        #ax1.set_ylabel(distance_name + " distance " + ylabel_1, rotation=-90, labelpad=11, position=(0,0.2))
+        ax1.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+    
+    ax2 = plt.subplot(gs1[2, :])
+    medians_df_2 = sorted_boxplot_histogram_distances(df_2, \
+                                                      df_2_rcbv, \
+                                       ax2, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", 
+                                       top=top)
+    ax2_sec = ax2.twinx()
+    ax2_sec.set_yticklabels([])
+    ax2_sec.yaxis.set_ticks_position('none')
+    ax2_sec.set_ylabel(ylabel_2, rotation=-90, fontweight="bold")
+    if method_comparison:
+        #ax2.set_ylabel("Hellinger distance " + ylabel_2, rotation=-90, labelpad=11, position=(0,0.2))
+        ax2.set_ylabel("Hellinger distance", rotation=-90, labelpad=11)
+    else:
+        #ax2.set_ylabel(distance_name + " distance " + ylabel_2, rotation=-90, labelpad=11, position=(0,0.2))
+        ax2.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+    
+    gs2 = gridspec.GridSpec(4, 3)
+    #gs2.update(left=0.55, right=0.98, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    gs2.update(left=0.07, right=0.45, bottom=0.09, top=0.91, hspace=0.5, wspace=0)
+    
+    ax3 = plt.subplot(gs2[0, :])
+    medians_df_3 = sorted_boxplot_histogram_distances(df_3, \
+                                                      df_3_rcbv, \
+                                       ax3, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    ax3_sec = ax3.twinx()
+    ax3_sec.set_yticklabels([])
+    ax3_sec.yaxis.set_ticks_position('none')
+    ax3_sec.set_ylabel(ylabel_3, rotation=-90, fontweight="bold")    
+    if method_comparison:
+        #ax3.set_ylabel("Wasserstein distance " + ylabel_3, rotation=-90, labelpad=11, position=(0,0.2))
+        ax3.set_ylabel("Wasserstein distance", rotation=-90, labelpad=11)
+    else:
+        #ax3.set_ylabel(distance_name + " distance " + ylabel_3, rotation=-90, labelpad=11, position=(0,0.2))
+        ax3.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+
+    ax4 = plt.subplot(gs2[2, :])
+    medians_df_4 = sorted_boxplot_histogram_distances(df_4, \
+                                                      df_4_rcbv, \
+                                       ax4, \
+                                       region_values, \
+                                       region_names, \
+                                       region_names_to_exclude, \
+                                       ylabel2="", \
+                                       ylabel="", \
+                                       title="", \
+                                       xlabel="", \
+                                       top=top)
+    ax4_sec = ax4.twinx()
+    ax4_sec.set_yticklabels([])
+    ax4_sec.yaxis.set_ticks_position('none')
+    ax4_sec.set_ylabel(ylabel_4, rotation=-90, fontweight="bold")
+    if method_comparison:
+        #ax4.set_ylabel("Wasserstein distance " + ylabel_4, rotation=-90, labelpad=11, position=(0,0.2))
+        ax4.set_ylabel("Wasserstein distance", rotation=-90, labelpad=11)
+    else:
+        #ax4.set_ylabel(distance_name + " distance " + ylabel_4, rotation=-90, labelpad=11, position=(0,0.2))
+        ax4.set_ylabel(distance_name + " distance", rotation=-90, labelpad=11)
+    
+    return []
+
+def plot_overall_regions(regions_df, region_values, region_names_to_exclude):
+    regions_df = \
+    regions_df.drop([str(region_values[np.where(region_names == region_name)[0][0]]) for region_name in region_names_to_exclude], axis=1)
