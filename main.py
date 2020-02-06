@@ -86,45 +86,32 @@ def main(args):
     #run_epic = False
     run_epic = args.run_epic
     
-    # No spaces. Can be a date [yyyy_mm_dd]
-    #output_directory_suffix = "2019_04_25"
-    output_directory_suffix = args.output_directory_suffix
+    # Get the output directory
+    output_directory = args.output_directory
     
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
     #DICOM_directory = "../DICOM_no_spaces"
     DICOM_directory = args.DICOM_directory
     
+    # Requires freesurfer to be installed
+    #perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = True
+    perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = False
+    
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
         # folders and file names in 
-        replace_spaces_with_underscore(DICOM_directory)    
+        replace_spaces_with_underscore(DICOM_directory)
     
-    # Output folder. This program shall not output
-    # or modify data in any other directory except
-    # in this folder. However, error log
-    # (from mri_robust_register failure)
-    # has been observed in the epi_corrections
-    # repository folder.
-    # The output folder is one directory up from DICOM_directory.
-    # corrections_base_directory is a relative path from
-    # the location of main.py to the output folder.
-    
-    corrections_base_directory = "../epi_corrections_out_" + \
-                                        output_directory_suffix
-    
-    #corrections_base_directory = relpath(abspath(DICOM_directory + "/.."), getcwd()) + \
-    #    "/epi_corrections_out_" + output_directory_suffix
-
     # Folder for EPI NIFTI pairs converted by
     # dcm2niix script (the script's output directory)
     # from .dcm files in DICOM_directory
-    EPI_NIFTI_directory = corrections_base_directory + "/EPI"
+    EPI_NIFTI_directory = output_directory + "/EPI"
     
     # Folder for FLAIR 3D NIFTI converted by
     # dcm2niix script (the script's output directory)
     # from .dcm files in DICOM_directory
-    FLAIR_3D_NIFTI_directory = corrections_base_directory + "/FLAIR_3D"
+    FLAIR_3D_NIFTI_directory = output_directory + "/FLAIR_3D"
 
     if run_dcm2niix:
         #"""
@@ -138,11 +125,12 @@ def main(args):
         dcm2niix_pipeline(DICOM_directory, \
                           EPI_NIFTI_directory, \
                           "epi")
-        # Convert FLAIR 3D data using the beyword "flair 3d"
-        create_directory_if_not_exists(FLAIR_3D_NIFTI_directory)
-        dcm2niix_pipeline(DICOM_directory, \
-                          FLAIR_3D_NIFTI_directory, \
-                          "flair_3d")        
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            # Convert FLAIR 3D data using the beyword "flair 3d"
+            create_directory_if_not_exists(FLAIR_3D_NIFTI_directory)
+            dcm2niix_pipeline(DICOM_directory, \
+                              FLAIR_3D_NIFTI_directory, \
+                              "flair_3d")
         # dcm2niix conversion end
         #"""
 
@@ -164,7 +152,7 @@ def main(args):
             print("----------------")
             print("----------------")
             print("Run NordicICE (head) Motion correction Batch Analysis on the nICE prepared NIFTI EPI data: " + \
-                  corrections_base_directory + "/" + "EPI_for_nICE_batch_head_motion_correction")
+                  output_directory + "/" + "EPI_for_nICE_batch_head_motion_correction")
             print("----------------")
             print("----------------")
             print()
@@ -200,40 +188,46 @@ def main(args):
         # Complete list of tuples with EPI pairs to correct for
         # magnetic susceptibility distortions
         EPI_pairs_to_correct = GE_blip_nii_pairs + SE_blip_nii_pairs
-        
+    
     if run_topup:
         # FSL TOPUP EPI correction section start
         
         # Output directory for FSL topup pipeline
-        TOPUP_directory = corrections_base_directory + "/TOPUP"
+        TOPUP_directory = output_directory + "/TOPUP"
         
         # Directory for final FSL topup corrected EPIs 
         # (positive phase encoded, blip up).
-        EPI_NIFTI_applytopup_directory = corrections_base_directory + "/EPI_applytopup"
+        EPI_NIFTI_applytopup_directory = output_directory + "/EPI_applytopup"
         create_directory_if_not_exists(EPI_NIFTI_applytopup_directory)
         
-        # Manager queue for report writer process
-        manager = mp.Manager()
-        
-        # Report queue
-        q = manager.Queue()
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            # Manager queue for report writer process
+            manager = mp.Manager()
+            # Report queue
+            q = manager.Queue()
+        else:
+            q = None
         
         # Multiprocessing pool of 8 workers (= number of physical CPU cores)
         p = mp.Pool(mp.cpu_count(), topup_pipeline_init, \
                     initargs=(q, EPI_NIFTI_directory, \
                               FLAIR_3D_NIFTI_directory, \
                               TOPUP_directory, \
-                              EPI_NIFTI_applytopup_directory), \
+                              EPI_NIFTI_applytopup_directory, \
+                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment), \
                     maxtasksperchild=1)
         
-        # Put report listener to work first
-        p.apply_async(report_listener, args=(q, TOPUP_directory))
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            # Put report listener to work first
+            p.apply_async(report_listener, args=(q, TOPUP_directory))
         
         # Run topup pipeline on chunks of EPI pairs concurrently,
         # working on GE pairs first.
         p.starmap(topup_pipeline, EPI_pairs_to_correct)
         
-        q.put('kill')
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            q.put('kill')
+        
         p.close()
         
         # FSL TOPUP EPI correction section end
@@ -243,36 +237,42 @@ def main(args):
         # Assuming converted NIFTI files are in EPI_NIFTI_directory
                 
         # Output directory for EPIC pipeline
-        EPIC_directory = corrections_base_directory + "/EPIC"
+        EPIC_directory = output_directory + "/EPIC"
         create_directory_if_not_exists(EPIC_directory)
         
         # Directory for final FSL topup corrected EPIs 
         # (positive phase encoded, blip up).
-        EPI_NIFTI_applyepic_directory = corrections_base_directory + "/EPI_applyepic"
+        EPI_NIFTI_applyepic_directory = output_directory + "/EPI_applyepic"
         create_directory_if_not_exists(EPI_NIFTI_applyepic_directory)
-                
-        # Manager queue for report writer process
-        manager = mp.Manager()
         
-        # Report queue
-        q = manager.Queue()
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            # Manager queue for report writer process
+            manager = mp.Manager()
+            # Report queue
+            q = manager.Queue()
+        else:
+            q = None
         
         # Multiprocessing pool of 8 workers (= number of physical CPU cores)
         p = mp.Pool(mp.cpu_count(), epic_pipeline_init, \
                     initargs=(q, EPI_NIFTI_directory, \
                               FLAIR_3D_NIFTI_directory, \
                               EPIC_directory, \
-                              EPI_NIFTI_applyepic_directory), \
+                              EPI_NIFTI_applyepic_directory, \
+                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment), \
                     maxtasksperchild=1)
         
-        # Put report listener to work first
-        p.apply_async(report_listener, args=(q, EPIC_directory, "epic"))
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            # Put report listener to work first
+            p.apply_async(report_listener, args=(q, EPIC_directory, "epic"))
         
         # Run topup pipeline on chunks of EPI pairs concurrently,
         # working on GE pairs first.
         p.starmap(epic_pipeline, EPI_pairs_to_correct)
         
-        q.put('kill')
+        if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+            q.put('kill')
+        
         p.close()
         # EPIC EPI correction section end
 
@@ -281,9 +281,9 @@ if __name__ == '__main__':
     parser.add_argument('--DICOM_directory', \
                         default="../DICOM_372114315_no_spaces", \
                         help="The relative path (from the location of main.py) to the DICOM folder containing the .dcm images")
-    parser.add_argument('--output_directory_suffix', \
-                        default="2019_06_05_372114315", \
-                        help="The suffix of the output directory. Output directory will be ../epi_corrections_out_ + output_directory_suffix (relative path from the location of main.py")
+    parser.add_argument('--output_directory', \
+                        default="../epi_corrections_out", \
+                        help="The output directory path relative to the location of main.py")
     parser.add_argument('--replace_spaces_with__', \
                         action='store_true', \
                         help="Replace all spaces in folder and file names in DICOM_directory (recursive) with underscore (_). Necessary for EPIC")

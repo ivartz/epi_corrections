@@ -82,10 +82,12 @@ def determine_e1_or_e2(file_name):
         from file_name, aborting process" % os.getpid())
         sys.exit(1)
 
-def determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file_name):
+def determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file_name):
     if "prescan" in file_name.lower():
         return "prescan"
     elif "scan" in file_name.lower():
+        return "scan"
+    elif "wip" in file_name.lower():
         return "scan"
     elif "corr_sense" in file_name.lower():
         return "corr_SENSE"
@@ -109,7 +111,7 @@ def determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file_name):
 
     else:
         print("PID %i: Error, could not determine prescan or scan or \
-        corr_SENSE or SENSE from file_name, aborting process" % os.getpid())
+        wip or corr_SENSE or SENSE from file_name, aborting process" % os.getpid())
         print(file_name)
         sys.exit(1)
     
@@ -128,8 +130,8 @@ def determine_merged_blips_file_name_topup(blip_down_file_name, \
         (e1 (GE) or e2 (SE)), aborting process" % os.getpid())
         sys.exit(1)
     
-    blip_down_type = determine_prescan_or_scan_or_corr_SENSE_or_SENSE(blip_down_file_name)
-    blip_up_type = determine_prescan_or_scan_or_corr_SENSE_or_SENSE(blip_up_file_name)
+    blip_down_type = determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(blip_down_file_name)
+    blip_up_type = determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(blip_up_file_name)
     echo_type = determine_e1_or_e2(blip_down_file_name)
 
     blip_down_blip_up_longest_common_substring_from_beginning = \
@@ -208,8 +210,8 @@ def determine_output_directory(root_folder_name, \
     output_directory = root_folder_name + \
         longest_common_substring_from_beginning(blip_down_file, \
                                                 blip_up_file)[len(NIFTI_folder_name):] + \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(blip_down_file_name) + "_" + \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(blip_up_file_name)
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(blip_down_file_name) + "_" + \
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(blip_up_file_name)
         
     return output_directory
 
@@ -881,16 +883,17 @@ def topup_pipeline(blip_down_file, blip_up_file):
     corrected_4D_file_postp = remove_first_and_last_slices_and_save(output_directory, \
                                                                     extract_string_after_last_backslash(corrected_4D_file))
     
-    # compute_similarities will also splitt corrected_4D_file_postp into
-    # blip down and blip up volume, but should not modify corrected_4D_file_postp .
-    report = compute_similarities(output_directory, \
-                                        blip_down_file_first_temp_window_moved, \
-                                        blip_up_file_first_temp_window_moved, \
-                                        corrected_4D_file_postp, \
-                                        topup_pipeline.TOPUP_folder_name, \
-                                        topup_pipeline.FLAIR_3D_NIFTI_folder_name)
-    
-    topup_pipeline.q.put(report)
+    if topup_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+        # compute_similarities will also splitt corrected_4D_file_postp into
+        # blip down and blip up volume, but should not modify corrected_4D_file_postp .
+        report = compute_similarities(output_directory, \
+                                            blip_down_file_first_temp_window_moved, \
+                                            blip_up_file_first_temp_window_moved, \
+                                            corrected_4D_file_postp, \
+                                            topup_pipeline.TOPUP_folder_name, \
+                                            topup_pipeline.FLAIR_3D_NIFTI_folder_name)
+        
+        topup_pipeline.q.put(report)
     #"""
     
     # Lastly, run applytopup using topup_out_base_name_file
@@ -908,12 +911,15 @@ def topup_pipeline(blip_down_file, blip_up_file):
 def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
                         FLAIR_3D_NIFTI_folder_name,\
                         TOPUP_folder_name, \
-                        EPI_NIFTI_applytopup_directory):
+                        EPI_NIFTI_applytopup_directory, \
+                        perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment):
     topup_pipeline.q = q
     topup_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
     topup_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
     topup_pipeline.TOPUP_folder_name = TOPUP_folder_name
     topup_pipeline.EPI_NIFTI_applytopup_directory = EPI_NIFTI_applytopup_directory
+    topup_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = \
+    perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment
 
 def epic_apply_pipeline(blip_down_nii_file, \
                 displacement_mgz_file, \
@@ -1084,21 +1090,22 @@ def epic_pipeline(blip_down_file, blip_up_file):
                                                    reverse_epi_corrected_nii_file, \
                                                    forward_epi_corrected_nii_file)
     
-    # - compute similarities between combinations
-    #  of raw, corrected reverse, forward and 3D FLAIR files
-    report = compute_similarities(output_directory, \
-                                        blip_down_file_first_temp_window_moved, \
-                                        blip_up_file_first_temp_window_moved, \
-                                        corrected_4D_file, \
-                                        epic_pipeline.EPIC_folder_name, \
-                                        epic_pipeline.FLAIR_3D_NIFTI_folder_name, \
-                                        "epic")
-    
-    # - put the similarity report
-    #   into the write queue
-    #   for group statistics
-    epic_pipeline.q.put(report)
+    if epic_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
+        # - compute similarities between combinations
+        #  of raw, corrected reverse, forward and 3D FLAIR files
+        report = compute_similarities(output_directory, \
+                                            blip_down_file_first_temp_window_moved, \
+                                            blip_up_file_first_temp_window_moved, \
+                                            corrected_4D_file, \
+                                            epic_pipeline.EPIC_folder_name, \
+                                            epic_pipeline.FLAIR_3D_NIFTI_folder_name, \
+                                            "epic")
         
+        # - put the similarity report
+        #   into the write queue
+        #   for group statistics
+        epic_pipeline.q.put(report)
+    
     # Lastly, run applyepic using displacement_mgz_file
     # on all temporary windows (DSC-MRI with contrast bolus)
     # of the positive/forward phase encoded EPI (blip_up_file).
@@ -1110,14 +1117,17 @@ def epic_pipeline(blip_down_file, blip_up_file):
 
     
 def epic_pipeline_init(q, EPI_NIFTI_folder_name, \
-                        FLAIR_3D_NIFTI_folder_name,\
-                        EPIC_folder_name, \
-                        EPI_NIFTI_applyepic_directory):
+                       FLAIR_3D_NIFTI_folder_name,\
+                       EPIC_folder_name, \
+                       EPI_NIFTI_applyepic_directory, \
+                       perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment):
     epic_pipeline.q = q
     epic_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
     epic_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
     epic_pipeline.EPIC_folder_name = EPIC_folder_name
     epic_pipeline.EPI_NIFTI_applyepic_directory = EPI_NIFTI_applyepic_directory
+    epic_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = \
+    perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment
 
 def listen_to_queue_and_write_to_file(q, report_file):
     # This operation report_file

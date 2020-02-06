@@ -9,7 +9,7 @@ Created on Mon Nov  5 13:39:38 2018
 # Uncovering all NIFTI files and folder structures to be corrected
 import os
 from utils import determine_e1_or_e2, \
-    determine_prescan_or_scan_or_corr_SENSE_or_SENSE
+    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE
 
 def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
 
@@ -129,22 +129,22 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
                     # Gradient Echo files    
     
                     if determine_e1_or_e2(file) == "e1" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "prescan":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "prescan":
                         # GE positive phase encoded
                         GE_prescan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "scan":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "scan":
                         # GE negative phase encoded
                         GE_scan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
                         # GE positive phase encoded
                         GE_corr_SENSE += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e1" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "SENSE":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "SENSE":
                         # GE negative phase encoded
                         GE_SENSE += [os.path.join(dirpath, file)]
                     
@@ -165,12 +165,12 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
                     # in it's name that is specified and seems to
                     # be positive phase encoded recording.
                     #elif determine_e1_or_e2(file) == "e1" and \
-                    #determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "not_corr":
+                    #determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "not_corr":
                     #    # GE positive phase encoded
                     #    GE_not_corr += [os.path.join(dirpath, file)]
     
                     #elif determine_e1_or_e2(file) == "e1" and \
-                    #determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr":
+                    #determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "corr":
                     #    # GE negative phase encoded
                     #    GE_corr += [os.path.join(dirpath, file)]
     
@@ -178,22 +178,22 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
                     # Spin Echo files
     
                     elif determine_e1_or_e2(file) == "e2" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "prescan":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "prescan":
                         # SE positive phase encoded
                         SE_prescan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "scan":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "scan":
                         # SE negative phase encoded
                         SE_scan += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "corr_SENSE":
                         # SE positive phase encoded
                         SE_corr_SENSE += [os.path.join(dirpath, file)]
     
                     elif determine_e1_or_e2(file) == "e2" and \
-                    determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "SENSE":
+                    determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "SENSE":
                         # SE negative phase encoded
                         SE_SENSE += [os.path.join(dirpath, file)]
     
@@ -214,12 +214,12 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
                     # in it's name that is specified and seems to
                     # be positive phase encoded recording.                    
                     #elif determine_e1_or_e2(file) == "e2" and \
-                    #determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "not_corr":
+                    #determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "not_corr":
                     #    # positive phase encoded
                     #    SE_not_corr += [os.path.join(dirpath, file)]
     
                     #elif determine_e1_or_e2(file) == "e2" and \
-                    #determine_prescan_or_scan_or_corr_SENSE_or_SENSE(file) == "corr":
+                    #determine_prescan_or_scan_or_wip_or_corr_SENSE_or_SENSE(file) == "corr":
                     #    # negative phase encoded
                     #    SE_corr += [os.path.join(dirpath, file)]
     
@@ -277,8 +277,8 @@ def get_blip_pairs(NIFTI_folder_name = "NIFTI"):
           (len(GE_prescan), len(GE_corr_SENSE), len(GE_prescan) + len(GE_corr_SENSE) + len(GE_not_corr)) )
     print("* Number of directories bypassed since no detection of opposite phase encoded EPI pairs: %i" % \
           num_directories_bypassed)
-    print("Sanity check: %i should be the original number of EPI blip-down-blip-up folders \
-    inside the input directy to this script, with directory root folder name: %s. \
+    print("Sanity check: %i should be the original number of EPI blip-down-blip-up folders\n \
+    inside the input directy to this script, with directory root folder name: %s.\n \
     This should be the output directory of dicom_to_niix_same_folder_structure.sh beforehand." % \
           (len(GE_blip_nii_pairs) + num_directories_bypassed, NIFTI_folder_name))
     
