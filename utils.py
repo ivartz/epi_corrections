@@ -150,13 +150,20 @@ def determine_merged_blips_file_name_topup(blip_down_file_name, \
         file_ending = "_prep_topup.nii"
     else:
         file_ending = ".nii"
-
+    """
     merged_blips_file_name = \
         blip_down_blip_up_longest_common_substring_from_beginning + \
         blip_down_type + "_" + \
         blip_up_type + "_" + \
         blip_down_number_before_echo_type_in_name + "_" + \
         blip_up_number_before_echo_type_in_name + "_" + \
+        determine_e1_or_e2(blip_down_file_name) + "_" + \
+        temporary_window_number + file_ending
+    """
+    merged_blips_file_name = \
+        blip_down_blip_up_longest_common_substring_from_beginning + \
+        blip_down_type + "_" + \
+        blip_up_type + "_" + \
         determine_e1_or_e2(blip_down_file_name) + "_" + \
         temporary_window_number + file_ending
     
@@ -708,6 +715,18 @@ def copy_file(source_file, destination_file):
                 '"'
     run_shell_command(command)
 
+def copy_file_return(source_file, destination_file):
+    # source_file and destination_file 
+    # need to be file path + "/" + file name
+    command = 'cp -v "' + \
+                source_file + \
+                '" "' + \
+                destination_file + \
+                '"'
+    run_shell_command(command)
+    
+    return destination_file
+    
 def move_file(source_file, destination_file):
     # source_file and destination_file 
     # need to be file path + "/" + file name
@@ -863,8 +882,13 @@ def topup_pipeline(blip_down_file, blip_up_file):
                                                                           blip_up_file, \
                                                                           correction_method='topup')
     #"""
-    topup_datain = "topup_config/aquisition_parameters.txt"
-    topup_config = "topup_config/b02b0.cnf"
+    # Assure proper config file for blip directions
+    if topup_pipeline.blip_combination == 1:
+        topup_datain = topup_pipeline.epi_corrections_relpath + "/topup_config/aquisition_parameters.txt"
+    elif topup_pipeline.blip_combination == 0:
+        topup_datain = topup_pipeline.epi_corrections_relpath + "/topup_config/aquisition_parameters_opposite.txt"
+    
+    topup_config = topup_pipeline.epi_corrections_relpath + "/topup_config/b02b0.cnf"
     
     # Finally, compute the off-resonance field and correct the EPI pair in
     # merged_image_for_topup_compute according to this field
@@ -912,7 +936,9 @@ def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
                         FLAIR_3D_NIFTI_folder_name,\
                         TOPUP_folder_name, \
                         EPI_NIFTI_applytopup_directory, \
-                        perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment):
+                        perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment, \
+                        blip_combination, \
+                        epi_corrections_relpath):
     topup_pipeline.q = q
     topup_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
     topup_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
@@ -920,6 +946,8 @@ def topup_pipeline_init(q, EPI_NIFTI_folder_name, \
     topup_pipeline.EPI_NIFTI_applytopup_directory = EPI_NIFTI_applytopup_directory
     topup_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = \
     perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment
+    topup_pipeline.blip_combination = blip_combination
+    topup_pipeline.epi_corrections_relpath = epi_corrections_relpath
 
 def epic_apply_pipeline(blip_down_nii_file, \
                 displacement_mgz_file, \
@@ -1013,7 +1041,13 @@ def epic_apply_pipeline(blip_down_nii_file, \
     copy_file(displacement_mgz_file[:-len(".mgz")] + ".nii", displacement_nii_file_copied)
 
 
-def epic_pipeline(blip_down_file, blip_up_file):
+def epic_pipeline(blip_down_file_orig, blip_up_file_orig):
+    
+    # Assure proper combiation of forward/reverse file
+    if epic_pipeline.blip_combination == 1:
+        blip_up_file, blip_down_file = blip_down_file_orig, blip_up_file_orig
+    elif epic_pipeline.blip_combination == 0:
+        blip_down_file, blip_up_file = blip_down_file_orig, blip_up_file_orig
     
     blip_down_file_name = extract_string_after_last_backslash(blip_down_file)
     
@@ -1120,7 +1154,9 @@ def epic_pipeline_init(q, EPI_NIFTI_folder_name, \
                        FLAIR_3D_NIFTI_folder_name,\
                        EPIC_folder_name, \
                        EPI_NIFTI_applyepic_directory, \
-                       perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment):
+                       perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment, \
+                       blip_combination, \
+                       epi_corrections_relpath):
     epic_pipeline.q = q
     epic_pipeline.EPI_NIFTI_folder_name = EPI_NIFTI_folder_name
     epic_pipeline.FLAIR_3D_NIFTI_folder_name = FLAIR_3D_NIFTI_folder_name
@@ -1128,6 +1164,8 @@ def epic_pipeline_init(q, EPI_NIFTI_folder_name, \
     epic_pipeline.EPI_NIFTI_applyepic_directory = EPI_NIFTI_applyepic_directory
     epic_pipeline.perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = \
     perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment
+    epic_pipeline.blip_combination = blip_combination
+    epic_pipeline.epi_corrections_relpath = epi_corrections_relpath    
 
 def listen_to_queue_and_write_to_file(q, report_file):
     # This operation report_file

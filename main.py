@@ -48,13 +48,16 @@ from utils import create_directory_if_not_exists, \
                     epic_pipeline_init, \
                     report_listener, \
                     print_detected_data, \
-                    replace_spaces_with_underscore
+                    replace_spaces_with_underscore, \
+                    copy_file_return, \
+                    determine_e1_or_e2
 import sys, argparse
-from os import getcwd
-from os.path import relpath, abspath
+import os
+#from os import getcwd
+#from os.path import relpath, abspath
 
 def main(args):
-
+    
     # NB! replace_spaces_with__ = True will
     # modify the folder and file names
     # in the input DICOM directory
@@ -63,20 +66,22 @@ def main(args):
     # Need to be True for EPIC to work. 
     # Will modify the folder and file names in DICOM_directory
     #replace_spaces_with__ = False
-    replace_spaces_with__ = args.replace_spaces_with__
+    #replace_spaces_with__ = args.replace_spaces_with__
     
     #run_dcm2niix = True
     #run_dcm2niix = False
-    run_dcm2niix = args.run_dcm2niix
+    #run_dcm2niix = args.run_dcm2niix
     
     # EPI head motion correction
     #epi_hmc = True
     #epi_hmc = False
-    epi_hmc = args.epi_hmc
+    #epi_hmc = args.epi_hmc
     
     #epi_nICE_hmc_not_done = True
     #epi_nICE_hmc_not_done = False
-    epi_nICE_hmc_not_done = args.epi_nICE_hmc_not_done
+    #epi_nICE_hmc_not_done = args.epi_nICE_hmc_not_done
+    
+    epi_corrections_relpath = os.path.dirname(os.path.relpath( __file__ ))
     
     #run_topup = True
     #run_topup = False
@@ -92,29 +97,32 @@ def main(args):
     # Original DICOM folder from Matlab anonymization
     # and defacing script.
     #DICOM_directory = "../DICOM_no_spaces"
-    DICOM_directory = args.DICOM_directory
+    #DICOM_directory = args.DICOM_directory
     
     # Requires freesurfer to be installed
     #perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = True
     perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment = False
     
+    """
     if replace_spaces_with__:
         # Replaces all spaces (" ") with "_" in all
         # folders and file names in 
         replace_spaces_with_underscore(DICOM_directory)
+    """
     
     # Folder for EPI NIFTI pairs converted by
     # dcm2niix script (the script's output directory)
     # from .dcm files in DICOM_directory
     EPI_NIFTI_directory = output_directory + "/EPI"
     
+    create_directory_if_not_exists(EPI_NIFTI_directory)
+    
     # Folder for FLAIR 3D NIFTI converted by
     # dcm2niix script (the script's output directory)
     # from .dcm files in DICOM_directory
     FLAIR_3D_NIFTI_directory = output_directory + "/FLAIR_3D"
-
+    """
     if run_dcm2niix:
-        #"""
         # dcm2niix NIFTI conversion start
         # 
         # using script/dicom_to_niix_same_folder_structure.sh
@@ -132,8 +140,7 @@ def main(args):
                               FLAIR_3D_NIFTI_directory, \
                               "flair_3d")
         # dcm2niix conversion end
-        #"""
-
+    
     if epi_hmc:
         # Head motion correction.
         
@@ -162,7 +169,7 @@ def main(args):
             sys.exit(0)
         elif not epi_nICE_hmc_not_done:
             epi_hmc_nICE_copy_back_script_wrapper(EPI_NIFTI_directory)
-
+    
     if run_topup or run_epic or args.print_epi_pairs:
         # Detect EPI pairs in EPI_NIFTI_directory
         
@@ -188,6 +195,14 @@ def main(args):
         # Complete list of tuples with EPI pairs to correct for
         # magnetic susceptibility distortions
         EPI_pairs_to_correct = GE_blip_nii_pairs + SE_blip_nii_pairs
+    """
+    # Make copies of the nifti files to work on
+    target_dyn_nifti_copied = \
+    [copy_file_return(file, EPI_NIFTI_directory + "/" + str(i+1) + "_scan_" + determine_e1_or_e2(file) + ".nii") for i, file in enumerate(args.target_dyn_nifti)]
+    opposite_dyn_nifti_copied = \
+    [copy_file_return(file, EPI_NIFTI_directory + "/" + str(i+1) + "_prescan_" + determine_e1_or_e2(file) + ".nii") for i, file in enumerate(args.opposite_dyn_nifti)]
+    
+    EPI_pairs_to_correct = list(zip(target_dyn_nifti_copied, opposite_dyn_nifti_copied))
     
     if run_topup:
         # FSL TOPUP EPI correction section start
@@ -214,7 +229,9 @@ def main(args):
                               FLAIR_3D_NIFTI_directory, \
                               TOPUP_directory, \
                               EPI_NIFTI_applytopup_directory, \
-                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment), \
+                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment, \
+                              args.combination, \
+                              epi_corrections_relpath), \
                     maxtasksperchild=1)
         
         if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
@@ -259,7 +276,9 @@ def main(args):
                               FLAIR_3D_NIFTI_directory, \
                               EPIC_directory, \
                               EPI_NIFTI_applyepic_directory, \
-                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment), \
+                              perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment, \
+                              args.combination, \
+                              epi_corrections_relpath), \
                     maxtasksperchild=1)
         
         if perform_raw_and_corrected_epi_to_flair_3d_similarity_assessment:
@@ -278,12 +297,35 @@ def main(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
+    parser.add_argument('--run_topup', \
+                        action='store_true', \
+                        help="FSL TOPUP EPI magnetic susceptibility distortion correction")
+    parser.add_argument('--run_epic', \
+                        action='store_true', \
+                        help="EPIC EPI magnetic susceptibility distortion correction")   
+    parser.add_argument('--target_dyn_nifti', \
+                        nargs="*", \
+                        help="One or more 4D EPI files to correct", \
+                        type=str, \
+                        default=["../scan_e2.nii"])
+    parser.add_argument('--opposite_dyn_nifti', \
+                        nargs="*", \
+                        help="One or more 4D EPI files with opposite phase encoding. Only the first time point is used from the dynamic files", \
+                        type=str, \
+                        default=["../prescan_e2.nii"])
+    parser.add_argument('--combination', \
+                        help="Is the target niftis compressed (1) or strecthed (0) along phase-encoding direction compared to the opposite phase encoded niftis?", \
+                        type=int, \
+                        default=1)
+    """
     parser.add_argument('--DICOM_directory', \
                         default="../DICOM_372114315_no_spaces", \
                         help="The relative path (from the location of main.py) to the DICOM folder containing the .dcm images")
+    """
     parser.add_argument('--output_directory', \
                         default="../epi_corrections_out", \
-                        help="The output directory path relative to the location of main.py")
+                        help="The relative output directory path")
+    """
     parser.add_argument('--replace_spaces_with__', \
                         action='store_true', \
                         help="Replace all spaces in folder and file names in DICOM_directory (recursive) with underscore (_). Necessary for EPIC")
@@ -299,11 +341,6 @@ if __name__ == '__main__':
     parser.add_argument('--print_epi_pairs', \
                         action='store_true', \
                         help="Print detected blip-down, blip-up EPI pairs that FSL TOPUP and EPIC will use")
-    parser.add_argument('--run_topup', \
-                        action='store_true', \
-                        help="FSL TOPUP EPI magnetic susceptibility distortion correction")
-    parser.add_argument('--run_epic', \
-                        action='store_true', \
-                        help="EPIC EPI magnetic susceptibility distortion correction")    
+    """
     args=parser.parse_args()
     main(args)
