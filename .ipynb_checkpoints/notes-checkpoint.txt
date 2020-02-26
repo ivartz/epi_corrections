@@ -1,37 +1,23 @@
-TODO
+2020-02-24: Re-do analysis of impact of corrections on rCBV, but in native (patient) space
 
-Done: Fix to correct DSC coreg reslice neuromorphometrics. 
+Make a separate working directory: epi_corrections_out_2019_07_02_native
 
-Not done: Normalize write flair images as well in spm_pipeline/coreg_norm_images.m
+- cd to respective original EPI_applyepic, etc. dirs
 
+find . -type d > ../../epi_corrections_out_2019_07_02_native/EPI_applyepic/orig-dirs.txt
 
-https://se.mathworks.com/help/compiler/create-and-install-a-standalone-application-from-matlab-code.html
+find . -type d > ../../epi_corrections_out_2019_07_02_native/EPI_applytopup/orig-dirs.txt
 
+find . -type d > ../../epi_corrections_out_2019_07_02_native/EPI_raw_DSC/orig-dirs.txt
 
+- in each of the new EPI_applyepic, etc. dirs
 
+xargs mkdir -p <orig-dirs.txt
 
+- cd to respective original EPI_applyepic, etc. dirs and copy only the files we want to the new dirs
 
-ffmpeg
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native/EPI_applyepic/file
 
-ffmpeg -i output_%03d.png -filter:v video.mp4
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native/EPI_applytopup/file
 
-ffmpeg -i output_%03d.png -filter:v "setpts=2.0*PTS" video.mp4
-
-
-#%%bash
-#ffmpeg -framerate 1 -i /home/ivar/Desktop/temp/render/EPI_raw_DSC/e1/output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 1 /home/ivar/Desktop/temp/render/EPI_raw_DSC/e1/video.mp4
-
-#%%bash
-# Converting png files to mp4 video using ffmpeg.
-# https://trac.ffmpeg.org/wiki/Encode/H.264
-# Lossless h264
-# lossless https://superuser.com/questions/1212023/ffmpeg-settings-for-converting-still-images-to-video-for-archival
-#ffmpeg -framerate 3 -i render/output_%03d.png -c:v libx264 -crf 0 render/video.mp4
-# Dimensions fixed, powerpoint compatible, best possible quality
-# powepoint compatible:https://stackoverflow.com/questions/44130350/convert-videos-with-ffmpeg-to-powerpoint-2016-compatible-video-format
-# https://stackoverflow.com/questions/20847674/ffmpeg-libx264-height-not-divisible-by-2
-#ffmpeg -framerate 3 -i /home/ivar/Desktop/temp/render/EPI_raw_DSC/output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 1 /home/ivar/Desktop/temp/render/EPI_raw_DSC/video.mp4
-# Powerpoint compatible, more compressed
-
-
-ffmpeg -framerate 60 -i output_%03d.png -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -c:v libx264 -preset slow -profile:v high -level:v 4.0 -pix_fmt yuv420p -crf 22 video.mp4
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native/EPI_raw_DSC/file
