@@ -6,9 +6,13 @@ function coreg_native_and_warp_rois(epi_corrections_out_dir)
 %%
 % Multiple copies of this file will be resliced and saved to a separate file.
 % NOTE: THIS NEEDS TO BE CHANGED
-regions_file = '/media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/labels_Neuromorphometrics_lrmerged.nii';
-
 epi_corrections_out_dir = '../../epi_corrections_out_2019_07_02_native';
+
+%regions_file = '/media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/labels_Neuromorphometrics_lrmerged.nii';
+
+regions_file = strcat(epi_corrections_out_dir, '/labels_Neuromorphometrics_lrmerged.nii');
+
+onco_dir = strcat(epi_corrections_out_dir, '/ONCOHabitats_tumor_segments_from_flair_native');
 
 %here
 FLAIR_3D_struct_array = dir(strcat(epi_corrections_out_dir, '/FLAIR_3D/**/*.nii'));
@@ -21,10 +25,19 @@ EPI_struct_array = EPI_struct_array(~contains({EPI_struct_array.folder}, 'perf')
 EPI_applytopup_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applytopup/**/*applytopup_postp.nii'));
 
 %here
-EPI_applyepic_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic_test/**/*applyepic.nii'));
+EPI_applyepic_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic/**/*applyepic.nii'));
 
 tumor_segments_struct_array = dir(strcat(epi_corrections_out_dir, ...
     '/ONCOHabitats_tumor_segments_from_flair_native/**/results/native/Segmentation_Flair_space.nii'));
+
+logfile = strcat(epi_corrections_out_dir, '/runlog.txt');
+
+diary off;
+if (exist(logfile, 'file'))
+    delete(logfile);
+end
+%diary on;
+diary(logfile);
 
 %%
 % 2. Run settings.
@@ -185,8 +198,25 @@ EPI_folder_name = 'EPI_raw_DSC';
 %     regions_file_copied_warped = strcat(DSC_struct_array.folder, '/yinvapplied_', ...
 %         type, '_labels_Neuromorphometrics_lrmerged.nii');
 %     
-%     % The ROIs file is taken in as other
-%     other = {regions_file_copied_warped};
+%     % Find corresponding segments file
+%     [~, ~, tumor_segments_file] = ...
+%         find_corresponding_native_flair_tumor_segments_file_for_DSC(DSC_file, onco_dir, tumor_segments_struct_array)
+%     
+%     disp(strcat('Loop ', int2str(i), ':', tumor_segments_file));
+%     
+%     tumor_segments_file_copied = ...
+%         strcat(DSC_struct_array.folder, ...
+%         '/', type, '_tumor_segments.nii');
+%     
+%     if run_everything
+%         copyfile(tumor_segments_file, tumor_segments_file_copied);
+%     end
+%     
+%     % The ROIs file and tumor segments file are taken in as other
+%     other = {
+%         tumor_segments_file_copied
+%         regions_file_copied_warped
+%         };
 % 
 %     if run_everything
 %         %coreg_est_reslice_function(ref, src, other, 4); % 4.order b-spline interpolation
@@ -200,6 +230,8 @@ EPI_folder_name = 'EPI_raw_DSC';
 %     % Cleaning up, deleting files we don't need any more
 %     if run_everything
 %         disp('The following files will be deleted');
+%         disp(tumor_segments_file_copied);
+%         delete(tumor_segments_file_copied);
 %         disp(src_file_copied);
 %         delete(src_file_copied);
 %         disp(regions_file_copied);
@@ -347,8 +379,25 @@ EPI_folder_name = 'EPI_applytopup';
 %     regions_file_copied_warped = strcat(DSC_struct_array.folder, '/yinvapplied_', ...
 %         type, '_labels_Neuromorphometrics_lrmerged.nii');
 %     
-%     % The ROIs file is taken in as other
-%     other = {regions_file_copied_warped};
+%     % Find corresponding segments file
+%     [~, ~, tumor_segments_file] = ...
+%         find_corresponding_native_flair_tumor_segments_file_for_DSC(DSC_file, onco_dir, tumor_segments_struct_array)
+%     
+%     disp(strcat('Loop ', int2str(i), ':', tumor_segments_file));
+%     
+%     tumor_segments_file_copied = ...
+%         strcat(DSC_struct_array.folder, ...
+%         '/', type, '_tumor_segments.nii');
+%     
+%     if run_everything
+%         copyfile(tumor_segments_file, tumor_segments_file_copied);
+%     end
+%     
+%     % The ROIs file and tumor segments file are taken in as other
+%     other = {
+%         tumor_segments_file_copied
+%         regions_file_copied_warped
+%         };
 % 
 %     if run_everything
 %         %coreg_est_reslice_function(ref, src, other, 4); % 4.order b-spline interpolation
@@ -362,6 +411,8 @@ EPI_folder_name = 'EPI_applytopup';
 %     % Cleaning up, deleting files we don't need any more
 %     if run_everything
 %         disp('The following files will be deleted');
+%         disp(tumor_segments_file_copied);
+%         delete(tumor_segments_file_copied);
 %         disp(src_file_copied);
 %         delete(src_file_copied);
 %         disp(regions_file_copied);
@@ -382,7 +433,7 @@ EPI_folder_name = 'EPI_applytopup';
 %%
 disp("--Running coreg + ROI warp pipeline on EPIC corrected data");
 EPI_struct_array = EPI_applyepic_struct_array;
-EPI_folder_name = 'EPI_applyepic_test';
+EPI_folder_name = 'EPI_applyepic';
 % Code within parfor loop is equal to the code within the other parfor loops
 parfor i = 1:length(EPI_struct_array)
     % --------------------------------
@@ -508,8 +559,19 @@ parfor i = 1:length(EPI_struct_array)
     regions_file_copied_warped = strcat(DSC_struct_array.folder, '/yinvapplied_', ...
         type, '_labels_Neuromorphometrics_lrmerged.nii');
     
+    % Find corresponding segments file
+    [~, ~, tumor_segments_file] = ...
+        find_corresponding_native_flair_tumor_segments_file_for_DSC(DSC_file, onco_dir, tumor_segments_struct_array)
     
-    tumor_segments_file_copied
+    disp(strcat('Loop ', int2str(i), ':', tumor_segments_file));
+    
+    tumor_segments_file_copied = ...
+        strcat(DSC_struct_array.folder, ...
+        '/', type, '_tumor_segments.nii');
+    
+    if run_everything
+        copyfile(tumor_segments_file, tumor_segments_file_copied);
+    end
     
     % The ROIs file and tumor segments file are taken in as other
     other = {
@@ -529,6 +591,8 @@ parfor i = 1:length(EPI_struct_array)
     % Cleaning up, deleting files we don't need any more
     if run_everything
         disp('The following files will be deleted');
+        disp(tumor_segments_file_copied);
+        delete(tumor_segments_file_copied);
         disp(src_file_copied);
         delete(src_file_copied);
         disp(regions_file_copied);

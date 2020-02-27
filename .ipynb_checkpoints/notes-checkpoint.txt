@@ -21,3 +21,9 @@ find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v f
 find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native/EPI_applytopup/file
 
 find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native/EPI_raw_DSC/file
+
+- cd to epi_corrections_out_2019_07_02_native and remove the existing copied flair images
+
+find . -name e1* -type f | xargs -I file rm -v file
+
+find . -name e2* -type f | xargs -I file rm -v file

@@ -6,7 +6,7 @@ function coreg_native_and_warp_rois(epi_corrections_out_dir)
 %%
 % Multiple copies of this file will be resliced and saved to a separate file.
 % NOTE: THIS NEEDS TO BE CHANGED
-%epi_corrections_out_dir = '../../epi_corrections_out_2019_07_02_native';
+epi_corrections_out_dir = '../../epi_corrections_out_2019_07_02_native';
 
 %regions_file = '/media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/labels_Neuromorphometrics_lrmerged.nii';
 
@@ -29,6 +29,15 @@ EPI_applyepic_struct_array = dir(strcat(epi_corrections_out_dir, '/EPI_applyepic
 
 tumor_segments_struct_array = dir(strcat(epi_corrections_out_dir, ...
     '/ONCOHabitats_tumor_segments_from_flair_native/**/results/native/Segmentation_Flair_space.nii'));
+
+logfile = strcat(epi_corrections_out_dir, '/runlog.txt');
+
+diary off;
+if (exist(logfile, 'file'))
+    delete(logfile);
+end
+%diary on;
+diary(logfile);
 
 %%
 % 2. Run settings.
