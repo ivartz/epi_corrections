@@ -38,6 +38,44 @@ def find_cbv_files(corrections_base_directory):
     
     return raw_cbv_files_e1, topup_cbv_files_e1, epic_cbv_files_e1, raw_cbv_files_e2, topup_cbv_files_e2, epic_cbv_files_e2
 
+def find_cbv_files_native(corrections_base_directory):
+
+    # Gradient Echo nrCBV (e1)
+
+    raw_cbv_files_e1 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e1_" in tuple3[0])]
+
+    topup_cbv_files_e1 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e1_" in tuple3[0])]
+
+    epic_cbv_files_e1 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e1_" in tuple3[0])]
+
+    # Spin Echo nrCBV (e2)
+
+    raw_cbv_files_e2 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e2_" in tuple3[0])]
+
+    topup_cbv_files_e2 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e2_" in tuple3[0])]
+
+    epic_cbv_files_e2 = \
+    [tuple3[0] + "/Normalized_rCBV_map_-Leakage_corrected.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("Normalized_rCBV_map_-Leakage_corrected.nii" in  tuple3[2] and "_e2_" in tuple3[0])]
+    
+    return raw_cbv_files_e1, topup_cbv_files_e1, epic_cbv_files_e1, raw_cbv_files_e2, topup_cbv_files_e2, epic_cbv_files_e2
+
 def find_field_files(corrections_base_directory):
 
     # Gradient Echo based
@@ -149,3 +187,41 @@ def find_segment_files(segment_base_directory):
      for tuple3 in os.walk(segment_base_directory) \
      if ("mni" in  tuple3[1])]
     return segment_files
+
+def find_segment_files_native(corrections_base_directory):
+    
+    # Gradient Echo tumor segments (e1)
+    
+    raw_segment_files_e1 = \
+    [tuple3[0] + "/re1_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("re1_tumor_segments.nii" in  tuple3[2])]
+    
+    topup_segment_files_e1 = \
+    [tuple3[0] + "/re1_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("re1_tumor_segments.nii" in  tuple3[2])]
+    
+    epic_segment_files_e1 = \
+    [tuple3[0] + "/re1_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("re1_tumor_segments.nii" in  tuple3[2])]
+    
+    # Spin Echo tumor segments (e2)
+    
+    raw_segment_files_e2 = \
+    [tuple3[0] + "/re2_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
+     if ("re2_tumor_segments.nii" in  tuple3[2])]
+    
+    topup_segment_files_e2 = \
+    [tuple3[0] + "/re2_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
+     if ("re2_tumor_segments.nii" in  tuple3[2])]
+    
+    epic_segment_files_e2 = \
+    [tuple3[0] + "/re2_tumor_segments.nii" \
+     for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
+     if ("re2_tumor_segments.nii" in  tuple3[2])]
+    
+    return raw_segment_files_e1, topup_segment_files_e1, epic_segment_files_e1, raw_segment_files_e2, topup_segment_files_e2, epic_segment_files_e2
