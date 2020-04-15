@@ -27,3 +27,7 @@ find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v f
 find . -name e1* -type f | xargs -I file rm -v file
 
 find . -name e2* -type f | xargs -I file rm -v file
+
+2020-04-15: Re-do analysis of impact of corrections on rCBV, but in native (patient) space and 
+with ground truth brain regions when computing Dice scores
+
