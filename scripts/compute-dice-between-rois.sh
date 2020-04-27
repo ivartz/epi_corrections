@@ -1,9 +1,9 @@
 # Run from epi_corrections dir as
-# bash scripts/compute-dice-between-rois.sh ../epi_corrections_out_2019_07_02_native_tumor_excluded_from_rcbv
+# bash scripts/compute-dice-between-rois.sh ../epi_corrections_out_2019_07_02_native_tumor_excluded_from_rcbv 2>&1 | tee ../epi_corrections_out_2019_07_02_native_tumor_excluded_from_rcbv/computedicelog.txt
 
 correction_dir=$1
 
-run_evals=0
+run_evals=1
 
 script=$(dirname $0)/get-dice-between-rois.py
 
@@ -17,19 +17,21 @@ readarray rcbv_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type 
 readarray rcbv_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type d -name *e1_perf | xargs -I {} echo {}/Normalized_rCBV_map_-Leakage_corrected.nii)
 
 # Template ROIs in DSC space (ground truth)
-readarray mnigtrois_epic_files_arr_e1 < <(find $correction_dir/EPI_applyepic -type d -name gtrois_e1 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
-readarray mnigtrois_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type d -name gtrois_e1 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
-readarray mnigtrois_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type d -name gtrois_e1 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
+readarray mnigtrois_epic_files_arr_e1 < <(find $correction_dir/EPI_applyepic -type f -name gtrois_e1.nii)
+readarray mnigtrois_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type f -name gtrois_e1.nii)
+readarray mnigtrois_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type f -name gtrois_e1.nii)
 
 # Template ROIs in DSC space
-readarray mnirois_epic_files_arr_e1 < <(find $correction_dir/EPI_applyepic -type f -name ryinvapplied_e1*)
-readarray mnirois_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type f -name ryinvapplied_e1*)
-readarray mnirois_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type f -name ryinvapplied_e1*)
+readarray mnirois_epic_files_arr_e1 < <(find $correction_dir/EPI_applyepic -type f -name rois_e1.nii)
+readarray mnirois_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type f -name rois_e1.nii)
+readarray mnirois_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type f -name rois_e1.nii)
 
 # Tumor ROIs in DSC space
+: '
 readarray tumorrois_epic_files_arr_e1 < <(find $correction_dir/EPI_applyepic -type f -name re1_tumor_segments.nii)
 readarray tumorrois_topup_files_arr_e1 < <(find $correction_dir/EPI_applytopup -type f -name re1_tumor_segments.nii)
 readarray tumorrois_raw_files_arr_e1 < <(find $correction_dir/EPI_raw_DSC -type f -name re1_tumor_segments.nii)
+'
 
 for (( i = 0 ; i < ${#rcbv_epic_files_arr_e1[@]} ; i++ )) ; do
     
@@ -69,6 +71,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e1[@]} ; i++ )) ; do
         eval $mniroiscommand
     fi
     
+    : '
     echo "---- RAW TO EPIC ----"
     cbvdir=$(dirname ${rcbv_epic_files_arr_e1[i]})
     
@@ -100,6 +103,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e1[@]} ; i++ )) ; do
         eval $mniroiscommand
         eval $tumorroiscommand
     fi
+    '
 done
 
 # Spin echo (e2)
@@ -112,19 +116,21 @@ readarray rcbv_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type 
 readarray rcbv_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type d -name *e2_perf | xargs -I {} echo {}/Normalized_rCBV_map_-Leakage_corrected.nii)
 
 # Template ROIs in DSC space (ground truth)
-readarray mnigtrois_epic_files_arr_e2 < <(find $correction_dir/EPI_applyepic -type d -name gtrois_e2 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
-readarray mnigtrois_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type d -name gtrois_e2 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
-readarray mnigtrois_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type d -name gtrois_e2 | xargs -I file echo file/rlabels_Neuromorphometrics_lrmerged.nii)
+readarray mnigtrois_epic_files_arr_e2 < <(find $correction_dir/EPI_applyepic -type f -name gtrois_e2.nii)
+readarray mnigtrois_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type f -name gtrois_e2.nii)
+readarray mnigtrois_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type f -name gtrois_e2.nii)
 
 # Template ROIs in DSC space
-readarray mnirois_epic_files_arr_e2 < <(find $correction_dir/EPI_applyepic -type f -name ryinvapplied_e2*)
-readarray mnirois_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type f -name ryinvapplied_e2*)
-readarray mnirois_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type f -name ryinvapplied_e2*)
+readarray mnirois_epic_files_arr_e2 < <(find $correction_dir/EPI_applyepic -type f -name rois_e2.nii)
+readarray mnirois_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type f -name rois_e2.nii)
+readarray mnirois_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type f -name rois_e2.nii)
 
 # Tumor ROIs in DSC space
+: '
 readarray tumorrois_epic_files_arr_e2 < <(find $correction_dir/EPI_applyepic -type f -name re2_tumor_segments.nii)
 readarray tumorrois_topup_files_arr_e2 < <(find $correction_dir/EPI_applytopup -type f -name re2_tumor_segments.nii)
 readarray tumorrois_raw_files_arr_e2 < <(find $correction_dir/EPI_raw_DSC -type f -name re2_tumor_segments.nii)
+'
 
 for (( i = 0 ; i < ${#rcbv_epic_files_arr_e2[@]} ; i++ )) ; do
 
@@ -163,7 +169,8 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e2[@]} ; i++ )) ; do
         echo $mniroiscommand > $cbvdir/mniroisgtrawdicecommand.txt
         eval $mniroiscommand
     fi
-
+    
+    : '
     echo "---- RAW TO EPIC ----"
     cbvdir=$(dirname ${rcbv_epic_files_arr_e2[i]})
     
@@ -195,4 +202,5 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e2[@]} ; i++ )) ; do
         eval $mniroiscommand
         eval $tumorroiscommand
     fi
+    '
 done

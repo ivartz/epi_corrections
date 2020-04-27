@@ -28,6 +28,17 @@ find . -name e1* -type f | xargs -I file rm -v file
 
 find . -name e2* -type f | xargs -I file rm -v file
 
-2020-04-15: Re-do analysis of impact of corrections on rCBV, but in native (patient) space and 
+2020-04-(15-23): Re-do analysis of impact of corrections on rCBV, but in native (patient) space and 
 with ground truth brain regions when computing Dice scores
 
+- Overwrite MNI tumor rois
+
+outdir="/media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/ONCOHabitats"
+
+cd /media/loek/HDD3TB1/data/IVS_EPI_BASELINE/ONCOhabitats_GBM_analysis_modified_pipeline
+
+find . -type d -name mni | xargs -I folder cp -v folder/Segmentation.nii.gz $outdir/folder/Segmentation.nii.gz
+
+cd /media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/ONCOHabitats
+
+find . -type d -name mni | xargs -I folder gunzip -kvf folder/Segmentation.nii.gz

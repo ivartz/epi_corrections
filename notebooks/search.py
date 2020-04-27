@@ -193,35 +193,35 @@ def find_segment_files_native(corrections_base_directory):
     # Gradient Echo tumor segments (e1)
     
     raw_segment_files_e1 = \
-    [tuple3[0] + "/re1_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e1.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
-     if ("re1_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e1.nii" in  tuple3[2])]
     
     topup_segment_files_e1 = \
-    [tuple3[0] + "/re1_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e1.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
-     if ("re1_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e1.nii" in  tuple3[2])]
     
     epic_segment_files_e1 = \
-    [tuple3[0] + "/re1_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e1.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
-     if ("re1_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e1.nii" in  tuple3[2])]
     
     # Spin Echo tumor segments (e2)
     
     raw_segment_files_e2 = \
-    [tuple3[0] + "/re2_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e2.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_raw_DSC") \
-     if ("re2_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e2.nii" in  tuple3[2])]
     
     topup_segment_files_e2 = \
-    [tuple3[0] + "/re2_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e2.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_applytopup") \
-     if ("re2_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e2.nii" in  tuple3[2])]
     
     epic_segment_files_e2 = \
-    [tuple3[0] + "/re2_tumor_segments.nii" \
+    [tuple3[0] + "/gttumorrois_e2.nii" \
      for tuple3 in os.walk(corrections_base_directory + "/EPI_applyepic") \
-     if ("re2_tumor_segments.nii" in  tuple3[2])]
+     if ("gttumorrois_e2.nii" in  tuple3[2])]
     
     return raw_segment_files_e1, topup_segment_files_e1, epic_segment_files_e1, raw_segment_files_e2, topup_segment_files_e2, epic_segment_files_e2

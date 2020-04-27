@@ -18,7 +18,7 @@ mniroivalues = np.array([ 1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.,  9., 10., 11., 
 
 mniroivalues = np.array([np.int32(v) for v in mniroivalues])
 
-mniroinames = np.array(['3rd Ventricle', '4th Ventricle', 'Left & right Accumbens Area',
+mniroinames = np.array(['3rd Ventricle', '4th Ventricle', 'Accumbens Area',
        'Amygdala', 'Brain Stem', 'Caudate',
        'Cerebellum Exterior',
        'Cerebellum White Matter',
@@ -184,6 +184,7 @@ if __name__ == "__main__":
     # Extract number of significant regions
     top = np.argwhere(np.sort(wilcoxonresults[1, :]) < cutoff)[-1][0] + 1
     #top = 66
+    #top = 10
     
     # Then sort significant regions by increasing dice score
     topmediandicescores = np.array([np.median(scores) for scores in np.array(alldicescores_nonan)[sortidx][:top]])
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     print("Median dice scores are: ")
     print(topmediandicescores)
     
-    descriptionchoice = 3
+    descriptionchoice = 1
     description = ["TOPUP impact on gradient echo DSC rCBV", \
                    "TOPUP impact on spin echo DSC rCBV", \
                    "EPIC impact on gradient echo DSC rCBV", \
@@ -268,7 +269,8 @@ if __name__ == "__main__":
     d = pd.concat((topregionsdatadf, topdicedatadf), axis=1).astype({"Region" : str, "Region" : str, "Dice score" : float})
     
     # Plot Dice scores
-    sns.swarmplot(x="Dice score", y="Region", data=d, ax=ax2)
+    #sns.swarmplot(x="Dice score", y="Region", data=d, ax=ax2)
+    sns.boxplot(x="Dice score", y="Region", data=d, ax=ax2)
     
     plt.setp(ax2.get_yticklabels(), visible=False)
     ax2.set_ylabel("")
