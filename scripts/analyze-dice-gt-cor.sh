@@ -20,7 +20,7 @@ done
 
 script=$(dirname $0)/raw-cor-dice-analysis.py
 
-command="python $script --rawdice ${gt_raw_mni_dice_files_arr_e2[@]} --cordice ${gt_topup_mni_dice_files_arr_e2[@]}"
+command="python $script --rawdice ${gt_raw_mni_dice_files_arr_e2[@]} --cordice ${gt_epic_mni_dice_files_arr_e2[@]}"
 
 #echo $command
 eval $command

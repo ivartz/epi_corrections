@@ -107,77 +107,60 @@ if __name__ == "__main__":
         default=["mniroismedians.txt"],
     )
     CLI.add_argument(
-        "--dicegtrawscores",
+        "--dicescores",
         nargs="*",
-        help=".txt files containing DICE scores of between pairs of ROIs based on gt and uncorrected rCBV",
+        help=".txt files containing DICE scores of between pairs of ROIs based on raw and corrected rCBV",
         type=str,
-        default=["mniroisgtrawdice.txt"],
-    )
-    CLI.add_argument(
-        "--dicegtcorscores",
-        nargs="*",
-        help=".txt files containing DICE scores of between pairs of ROIs based on gt and corrected rCBV",
-        type=str,
-        default=["mniroisgttopupdice.txt"],
+        default=["mniroisrawcordice.txt"],
     )
     args = CLI.parse_args()
     
-    assert len(args.rawmedians) == len(args.cormedians) \
-        == len(args.dicegtrawscores) == len(args.dicegtcorscores), \
-    "Not equal number of rawmedians, cormedians and dicegtcorscores files passed as argument"
+    assert len(args.rawmedians) == len(args.cormedians) == len(args.dicescores), \
+    "Not equal number of rawmedians, cormedians and dicescores files passed as argument"
     
     num_sub = len(args.rawmedians)
     num_rois = len(mniroivalues)
     
-    allrawmedians, allcormedians, alldicegtrawscores, alldicegtcorscores = \
-                                                  np.empty((num_rois, num_sub)), \
-                                                  np.empty((num_rois, num_sub)), \
+    allrawmedians, allcormedians, alldicescores = np.empty((num_rois, num_sub)), \
                                                   np.empty((num_rois, num_sub)), \
                                                   np.empty((num_rois, num_sub))
-    #allrawmedians, allcormedians, alldicegtcorscores = np.empty((num_sub, num_rois)), \
+    #allrawmedians, allcormedians, alldicescores = np.empty((num_sub, num_rois)), \
     #                                              np.empty((num_sub, num_rois)), \
     #                                              np.empty((num_sub, num_rois))
-    allrawmedians[:], allcormedians[:], alldicegtrawscores[:], alldicegtcorscores[:] = \
-                                                  np.nan, np.nan, np.nan, np.nan
+    allrawmedians[:], allcormedians[:], alldicescores[:] = np.nan, np.nan, np.nan
     
     for i in range(num_sub):
         
         # Read the files
         rawrois, rawmedians = read_roi_medians(args.rawmedians[i])
         corrois, cormedians = read_roi_medians(args.cormedians[i])
-        dicegtrawrois, dicegtrawscores = read_roi_dice_scores(args.dicegtrawscores[i])
-        dicegtcorrois, dicegtcorscores = read_roi_dice_scores(args.dicegtcorscores[i])
+        dicerois, dicescores = read_roi_dice_scores(args.dicescores[i])
         
         # Find the common rois
         rois = np.intersect1d(rawrois, corrois)
-        rois = np.intersect1d(rois, dicegtrawrois) # Made a change
-        rois = np.intersect1d(rois, dicegtcorrois)
+        rois = np.intersect1d(rois, dicerois)
         
         # Find the common medians and dice scores by
         # using the common rois
         rawmedians_common = [rawmedians[idx] for idx in [np.where(rawrois == roi)[0][0] for roi in rois]]
         cormedians_common = [cormedians[idx] for idx in [np.where(corrois == roi)[0][0] for roi in rois]]
-        dicegtrawscores_common = [dicegtrawscores[idx] for idx in [np.where(dicegtrawrois == roi)[0][0] for roi in rois]]
-        dicegtcorscores_common = [dicegtcorscores[idx] for idx in [np.where(dicegtcorrois == roi)[0][0] for roi in rois]]
+        dicescores_common = [dicescores[idx] for idx in [np.where(dicerois == roi)[0][0] for roi in rois]]
         
-        assert len(rois) == len(rawmedians_common) == len(cormedians_common) \
-            == len(dicegtrawscores_common) == len(dicegtcorscores_common), \
+        assert len(rois) == len(rawmedians_common) == len(cormedians_common) == len(dicescores_common), \
         "Failed to find common regions for analysis of medians and dice scores"
         
         allrawmedians[[np.where(mniroivalues == roi)[0][0] for roi in rois], i] = rawmedians_common
         allcormedians[[np.where(mniroivalues == roi)[0][0] for roi in rois], i] = cormedians_common
-        alldicegtrawscores[[np.where(mniroivalues == roi)[0][0] for roi in rois], i] = dicegtrawscores_common
-        alldicegtcorscores[[np.where(mniroivalues == roi)[0][0] for roi in rois], i] = dicegtcorscores_common
+        alldicescores[[np.where(mniroivalues == roi)[0][0] for roi in rois], i] = dicescores_common
     
         #allrawmedians[i, [np.where(mniroivalues == roi)[0][0] for roi in rois]] = rawmedians_common
         #allcormedians[i, [np.where(mniroivalues == roi)[0][0] for roi in rois]] = cormedians_common
-        #alldicegtcorscores[i, [np.where(mniroivalues == roi)[0][0] for roi in rois]] = dicegtcorscores_common
+        #alldicescores[i, [np.where(mniroivalues == roi)[0][0] for roi in rois]] = dicescores_common
     
     
     allrawmedians_nonan = [roisamples[~np.isnan(roisamples)] for roisamples in allrawmedians]
     allcormedians_nonan = [roisamples[~np.isnan(roisamples)] for roisamples in allcormedians]
-    alldicegtrawscores_nonan = [roisamples[~np.isnan(roisamples)] for roisamples in alldicegtrawscores]
-    alldicegtcorscores_nonan = [roisamples[~np.isnan(roisamples)] for roisamples in alldicegtcorscores]
+    alldicescores_nonan = [roisamples[~np.isnan(roisamples)] for roisamples in alldicescores]
     
     wilcoxonresults = np.empty((2, num_rois))
     wilcoxonresults[:] = np.nan
@@ -190,7 +173,7 @@ if __name__ == "__main__":
     # By increaseing p-value
     sortidx = np.argsort(wilcoxonresults[1, :])#[::-1]
     # By increasing dice score
-    #sortidx = np.argsort([np.median(s) for s in alldicegtcorscores_nonan])#[::-1]
+    #sortidx = np.argsort([np.median(s) for s in alldicescores_nonan])#[::-1]
         
     # Bonferroni correction
     alpha = 0.05
@@ -203,13 +186,9 @@ if __name__ == "__main__":
     #top = 66
     #top = 10
     
-    # Then sort significant regions by decreasing gtvscor-gtcsraw dice score improvement
-    print("SE her")
-    alldicescoreimprovements_nonan = \
-    [gtcordicescores_region-gtrawdicescores_region for \
-     gtcordicescores_region, gtrawdicescores_region in zip(alldicegtcorscores_nonan, alldicegtrawscores_nonan)]
-    topmediandicescoreimprovements = np.array([np.median(scores) for scores in np.array(alldicescoreimprovements_nonan)[sortidx][:top]])
-    sortidx2 = np.argsort(topmediandicescoreimprovements)[::-1]
+    # Then sort significant regions by increasing dice score
+    topmediandicescores = np.array([np.median(scores) for scores in np.array(alldicescores_nonan)[sortidx][:top]])
+    sortidx2 = np.argsort(topmediandicescores)
     
     # The significant regions
     topregions = mniroinames[sortidx][:top][sortidx2]
@@ -218,10 +197,10 @@ if __name__ == "__main__":
     print(topregions)
     toppvalues = wilcoxonresults[1, :][sortidx][:top][sortidx2]
     print("p-values are: ")
-    #print(toppvalues)
-    #topmediandicegtcorscores = np.array([np.median(scores) for scores in np.array(alldicegtcorscores_nonan)[sortidx][:top]])
-    print("Top median dice score improvements are: ")
-    print(topmediandicescoreimprovements[sortidx2])
+    print(toppvalues)
+    #topmediandicescores = np.array([np.median(scores) for scores in np.array(alldicescores_nonan)[sortidx][:top]])
+    print("Median dice scores are: ")
+    print(topmediandicescores)
     
     descriptionchoice = 0
     description = ["TOPUP impact on gradient echo DSC rCBV", \
@@ -281,41 +260,17 @@ if __name__ == "__main__":
     
     plt.setp(ax3.get_yticklabels(), visible=False)
     
-    # Prepare Dice score improvements for swarm plot
-    topdicedata = np.array(alldicescoreimprovements_nonan)[sortidx][:top][sortidx2]
+    # Prepare Dice scores for swarm plot
+    topdicedata = np.array(alldicescores_nonan)[sortidx][:top][sortidx2]
     topregionsdatadf = \
     pd.DataFrame({"Region" : np.array([pd.Series([region for num_samples in range(len(samples))], dtype="category") for region, samples in zip(topregions, topdicedata)])}).explode("Region")
     topdicedatadf = \
-    pd.DataFrame({"Dice improvement" : np.array([pd.Series([sample for sample in samples], dtype=float) for samples in topdicedata])}).explode("Dice improvement")
-    d = pd.concat((topregionsdatadf, topdicedatadf), axis=1).astype({"Region" : str, "Dice improvement" : float})
+    pd.DataFrame({"Dice score" : np.array([pd.Series([sample for sample in samples], dtype=float) for samples in topdicedata])}).explode("Dice score")
+    d = pd.concat((topregionsdatadf, topdicedatadf), axis=1).astype({"Region" : str, "Region" : str, "Dice score" : float})
     
-    # Plot Dice score improvements
-    #sns.swarmplot(x="Dice improvement", y="Region", data=d, ax=ax2)
-    sns.boxplot(x="Dice improvement", y="Region", data=d, ax=ax2)
-    #sns.pointplot(x="Dice improvement", y="Region", data=d, ax=ax2, color="red", scale=.5)
-    #sns.pointplot(x="Dice improvement", y="Region", data=d, ax=ax2, estimator=np.median, color="red", scale=.5)
-    #ax2.plot(y=[0]*len(d))
-    ax2.axvline(0, color='r', linestyle='--')
-    #sns.lineplot(x="Dice improvement", y="Region", data=d, ax=ax2)
-    #ax2.plot(topmediandicescoreimprovements[sortidx2], 'r-o', linewidth=4)
-    #mx=pd.DataFrame(d.groupby("Region")["Dice improvement"].median())
-    #print(mx)
-    #m=d.groupby("Region")["Dice improvement"].median()
-    #print(mx2["Region"])
-    #print(type(d["Region"][0]))# = mx.values.astype(float)
-    #print(type(mx.index[0]))
-    #sns.lineplot(y=np.array(mx2.values, dtype=float), x=np.array(mx2.index, dtype=str), ax=ax2)
-    
-    ax2.set_xlim(-0.3,0.3)
-    
-    #md1
-    #md2
-    #md = pd.DataFrame({"Region" : np.array(m.index, dtype=str), "Dice improvement" : np.array(m.values, dtype=float)})
-    
-    #print(m)
-    #sns.lineplot(x="Dice improvement", y="Region", data=md, ax=ax2)
-    #print(np.array(mx2.index, dtype=str))
-    #print(np.array(mx2.values, dtype=float))
+    # Plot Dice scores
+    #sns.swarmplot(x="Dice score", y="Region", data=d, ax=ax2)
+    sns.boxplot(x="Dice score", y="Region", data=d, ax=ax2)
     
     plt.setp(ax2.get_yticklabels(), visible=False)
     ax2.set_ylabel("")

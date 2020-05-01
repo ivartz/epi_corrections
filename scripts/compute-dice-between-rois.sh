@@ -39,6 +39,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e1[@]} ; i++ )) ; do
     cbvdir=$(dirname ${rcbv_epic_files_arr_e1[i]})
     
     mniroiscommand="python $script --rois1 ${mnigtrois_epic_files_arr_e1[i]} --rois2 ${mnirois_epic_files_arr_e1[i]} > $cbvdir/mniroisgtepicdice.txt"
+    #mniroiscommand="python $script --rois1 ${mnigtrois_raw_files_arr_e1[i]} --rois2 ${mnirois_epic_files_arr_e1[i]} > $cbvdir/mniroisgtepicdice.txt"
     
     echo $mniroiscommand
     
@@ -51,6 +52,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e1[@]} ; i++ )) ; do
     cbvdir=$(dirname ${rcbv_topup_files_arr_e1[i]})
     
     mniroiscommand="python $script --rois1 ${mnigtrois_topup_files_arr_e1[i]} --rois2 ${mnirois_topup_files_arr_e1[i]} > $cbvdir/mniroisgttopupdice.txt"
+    #mniroiscommand="python $script --rois1 ${mnigtrois_raw_files_arr_e1[i]} --rois2 ${mnirois_topup_files_arr_e1[i]} > $cbvdir/mniroisgttopupdice.txt"
     
     echo $mniroiscommand
     
@@ -138,6 +140,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e2[@]} ; i++ )) ; do
     cbvdir=$(dirname ${rcbv_epic_files_arr_e2[i]})
     
     mniroiscommand="python $script --rois1 ${mnigtrois_epic_files_arr_e2[i]} --rois2 ${mnirois_epic_files_arr_e2[i]} > $cbvdir/mniroisgtepicdice.txt"
+    #mniroiscommand="python $script --rois1 ${mnigtrois_raw_files_arr_e2[i]} --rois2 ${mnirois_epic_files_arr_e2[i]} > $cbvdir/mniroisgtepicdice.txt"
     
     echo $mniroiscommand
     
@@ -150,6 +153,7 @@ for (( i = 0 ; i < ${#rcbv_epic_files_arr_e2[@]} ; i++ )) ; do
     cbvdir=$(dirname ${rcbv_topup_files_arr_e2[i]})
     
     mniroiscommand="python $script --rois1 ${mnigtrois_topup_files_arr_e2[i]} --rois2 ${mnirois_topup_files_arr_e2[i]} > $cbvdir/mniroisgttopupdice.txt"
+    #mniroiscommand="python $script --rois1 ${mnigtrois_raw_files_arr_e2[i]} --rois2 ${mnirois_topup_files_arr_e2[i]} > $cbvdir/mniroisgttopupdice.txt"
     
     echo $mniroiscommand
     

@@ -39,7 +39,7 @@ done
 
 script=$(dirname $0)/wilcoxon-and-mni-rois-dice-analysis.py
 
-command="python $script --rawmedians ${mni_medians_raw_files_arr_e2[@]} --cormedians ${mni_medians_topup_files_arr_e2[@]} --dicescores ${gt_topup_mni_dice_files_arr_e2[@]}"
+command="python $script --rawmedians ${mni_medians_raw_files_arr_e1[@]} --cormedians ${mni_medians_topup_files_arr_e1[@]} --dicegtrawscores ${gt_raw_mni_dice_files_arr_e1[@]} --dicegtcorscores ${gt_topup_mni_dice_files_arr_e1[@]}"
 
 #echo $command
 eval $command

@@ -168,6 +168,18 @@ if __name__ == "__main__":
     print(topbla)
     print(mniroinames[sortidxbla][:topbla])
     
+    topmedianrawdicescoressortedbla = \
+    np.array([np.median(scores) for scores in np.array(allrawdicescores_nonan)[sortidxbla][:topbla]])
+    topmediancordicescoressortedbla = \
+    np.array([np.median(scores) for scores in np.array(allcordicescores_nonan)[sortidxbla][:topbla]])
+    
+    print("before")
+    print(topmedianrawdicescoressortedbla)
+    print("after")
+    print(topmediancordicescoressortedbla)
+    print("after-before")
+    print(topmediancordicescoressortedbla-topmedianrawdicescoressortedbla)
+    
     top = 72 # 72 or more selects all regions. 71 for TOPUP GE beceause region "vessel" contain only
     # nan . This causes problems.
     #top = 10
