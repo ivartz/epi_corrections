@@ -223,7 +223,7 @@ if __name__ == "__main__":
     print("Top median dice score improvements are: ")
     print(topmediandicescoreimprovements[sortidx2])
     
-    descriptionchoice = 0
+    descriptionchoice = 3
     description = ["TOPUP impact on gradient echo DSC rCBV", \
                    "TOPUP impact on spin echo DSC rCBV", \
                    "EPIC impact on gradient echo DSC rCBV", \
@@ -271,6 +271,8 @@ if __name__ == "__main__":
                    inner="quart",
                    data=d, 
                    ax=ax1)
+    # Set xlim for ax1
+    ax1.set_xlim(0,7) # TODO: manual
     
     # Plot p-values
     sns.barplot(x=toppvalues,
@@ -306,14 +308,16 @@ if __name__ == "__main__":
     #print(type(mx.index[0]))
     #sns.lineplot(y=np.array(mx2.values, dtype=float), x=np.array(mx2.index, dtype=str), ax=ax2)
     
-    ax2.set_xlim(-0.3,0.3)
+    ax2.set_xlim(-0.4,0.4) # TODO: Set manually
+    
+    ax3.set_xlim(0,0.0005) # TODO: Set manually
     
     #md1
     #md2
     #md = pd.DataFrame({"Region" : np.array(m.index, dtype=str), "Dice improvement" : np.array(m.values, dtype=float)})
     
     #print(m)
-    #sns.lineplot(x="Dice improvement", y="Region", data=md, ax=ax2)
+        #sns.lineplot(x="Dice improvement", y="Region", data=md, ax=ax2)
     #print(np.array(mx2.index, dtype=str))
     #print(np.array(mx2.values, dtype=float))
     

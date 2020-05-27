@@ -1,5 +1,5 @@
 # Run from epi_corrections dir as
-# bash scripts/analyze-medians-and-dice-scores.sh ../epi_corrections_out_2019_07_02_native_tumor_excluded_from_rcbv
+# bash scripts/test.sh ../epi_corrections_out_2019_07_02_native_tumor_excluded_from_rcbv
 
 correction_dir=$1
 
@@ -21,6 +21,19 @@ for (( i = 1 ; i < 3 ; i++ )) ; do
     readarray gt_topup_mni_dice_files_arr_e${i} < <(find $correction_dir/EPI_applytopup -type d -name *e${i}_prep_topup_applytopup_postp_perf | xargs -I {} echo {}/mniroisgttopupdice.txt)
 
     readarray gt_raw_mni_dice_files_arr_e${i} < <(find $correction_dir/EPI_raw_DSC -type d -name *e${i}_perf | xargs -I {} echo {}/mniroisgtrawdice.txt)
+
+    # MNI ROI dice files
+    : '
+    readarray raw_epic_mni_dice_files_arr_e${i} < <(find $correction_dir/EPI_applyepic -type d -name *e${i}_applyepic_perf | xargs -I {} echo {}/mniroisrawcordice.txt)
+
+    readarray raw_topup_mni_dice_files_arr_e${i} < <(find $correction_dir/EPI_applytopup -type d -name *e${i}_prep_topup_applytopup_postp_perf | xargs -I {} echo {}/mniroisrawcordice.txt)
+
+    # Tumor ROI dice files
+    
+    readarray raw_epic_tumor_dice_files_arr_e${i} < <(find $correction_dir/EPI_applyepic -type d -name *e${i}_applyepic_perf | xargs -I {} echo {}/tumorroisrawcordice.txt)
+
+    readarray raw_topup_tumor_dice_files_arr_e${i} < <(find $correction_dir/EPI_applytopup -type d -name *e${i}_prep_topup_applytopup_postp_perf | xargs -I {} echo {}/tumorroisrawcordice.txt)
+    '
 
 done
 
@@ -59,27 +72,39 @@ readarray gt_epic_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_epic_mni_
 readarray gt_topup_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_topup_mni_dice_files_arr_e2[*]} | grep -iv sense)
 readarray gt_raw_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_raw_mni_dice_files_arr_e2[*]} | grep -iv sense)
 
-# Without SENSE, first 15
-readarray mni_medians_epic_files_arr_e1_nosense < <(printf '%s\n' ${mni_medians_epic_files_arr_e1[*]} | grep -iv sense | head -n 15)
-readarray mni_medians_topup_files_arr_e1_nosense < <(printf '%s\n' ${mni_medians_topup_files_arr_e1[*]} | grep -iv sense | head -n 15)
-readarray mni_medians_raw_files_arr_e1_nosense < <(printf '%s\n' ${mni_medians_raw_files_arr_e1[*]} | grep -iv sense | head -n 15)
 
-readarray gt_epic_mni_dice_files_arr_e1_nosense < <(printf '%s\n' ${gt_epic_mni_dice_files_arr_e1[*]} | grep -iv sense | head -n 15)
-readarray gt_topup_mni_dice_files_arr_e1_nosense < <(printf '%s\n' ${gt_topup_mni_dice_files_arr_e1[*]} | grep -iv sense | head -n 15)
-readarray gt_raw_mni_dice_files_arr_e1_nosense < <(printf '%s\n' ${gt_raw_mni_dice_files_arr_e1[*]} | grep -iv sense | head -n 15)
+#for f in ${gt_raw_mni_dice_files_arr_e2_nosense[*]}; do
+#    echo $f
+#done
 
-readarray mni_medians_epic_files_arr_e2_nosense < <(printf '%s\n' ${mni_medians_epic_files_arr_e2[*]} | grep -iv sense | head -n 15)
-readarray mni_medians_topup_files_arr_e2_nosense < <(printf '%s\n' ${mni_medians_topup_files_arr_e2[*]} | grep -iv sense | head -n 15)
-readarray mni_medians_raw_files_arr_e2_nosense < <(printf '%s\n' ${mni_medians_raw_files_arr_e2[*]} | grep -iv sense | head -n 15)
+echo ${#mni_medians_epic_files_arr_e1_sense[*]}
+echo ${#mni_medians_topup_files_arr_e1_sense[*]}
+echo ${#mni_medians_raw_files_arr_e1_sense[*]}
 
-readarray gt_epic_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_epic_mni_dice_files_arr_e2[*]} | grep -iv sense | head -n 15)
-readarray gt_topup_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_topup_mni_dice_files_arr_e2[*]} | grep -iv sense | head -n 15)
-readarray gt_raw_mni_dice_files_arr_e2_nosense < <(printf '%s\n' ${gt_raw_mni_dice_files_arr_e2[*]} | grep -iv sense | head -n 15)
+echo ${#gt_epic_mni_dice_files_arr_e1_sense[*]}
+echo ${#gt_topup_mni_dice_files_arr_e1_sense[*]}
+echo ${#gt_raw_mni_dice_files_arr_e1_sense[*]}
 
+echo ${#mni_medians_epic_files_arr_e2_sense[*]}
+echo ${#mni_medians_topup_files_arr_e2_sense[*]}
+echo ${#mni_medians_raw_files_arr_e2_sense[*]}
 
-script=$(dirname $0)/wilcoxon-and-mni-rois-dice-analysis.py
+echo ${#gt_epic_mni_dice_files_arr_e2_sense[*]}
+echo ${#gt_topup_mni_dice_files_arr_e2_sense[*]}
+echo ${#gt_raw_mni_dice_files_arr_e2_sense[*]}
 
-command="python $script --rawmedians ${mni_medians_raw_files_arr_e2[@]} --cormedians ${mni_medians_epic_files_arr_e2[@]} --dicegtrawscores ${gt_raw_mni_dice_files_arr_e2[@]} --dicegtcorscores ${gt_epic_mni_dice_files_arr_e2[@]}"
+echo ${#mni_medians_epic_files_arr_e1_nosense[*]}
+echo ${#mni_medians_topup_files_arr_e1_nosense[*]}
+echo ${#mni_medians_raw_files_arr_e1_nosense[*]}
 
-#echo $command
-eval $command
+echo ${#gt_epic_mni_dice_files_arr_e1_nosense[*]}
+echo ${#gt_topup_mni_dice_files_arr_e1_nosense[*]}
+echo ${#gt_raw_mni_dice_files_arr_e1_nosense[*]}
+
+echo ${#mni_medians_epic_files_arr_e2_nosense[*]}
+echo ${#mni_medians_topup_files_arr_e2_nosense[*]}
+echo ${#mni_medians_raw_files_arr_e2_nosense[*]}
+
+echo ${#gt_epic_mni_dice_files_arr_e2_nosense[*]}
+echo ${#gt_topup_mni_dice_files_arr_e2_nosense[*]}
+echo ${#gt_raw_mni_dice_files_arr_e2_nosense[*]}
