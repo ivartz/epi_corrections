@@ -210,8 +210,7 @@ def main(args):
         # Output directory for FSL topup pipeline
         TOPUP_directory = output_directory + "/TOPUP"
         
-        # Directory for final FSL topup corrected EPIs 
-        # (positive phase encoded, blip up).
+        # Directory for final FSL topup corrected EPIs
         EPI_NIFTI_applytopup_directory = output_directory + "/EPI_applytopup"
         create_directory_if_not_exists(EPI_NIFTI_applytopup_directory)
         
