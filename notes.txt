@@ -42,3 +42,38 @@ find . -type d -name mni | xargs -I folder cp -v folder/Segmentation.nii.gz $out
 cd /media/loek/HDD3TB1/data/IVS_EPI_BASELINE/epi_corrections_out_2019_07_02_native/ONCOHabitats
 
 find . -type d -name mni | xargs -I folder gunzip -kvf folder/Segmentation.nii.gz
+
+
+2020-08-31: Additional analysis of impact of corrections on rCBV in native GT ROIs
+
+mkdir epi_corrections_out_2019_07_02_native_wtumor
+
+cd epi_corrections_out_2019_07_02_native_wtumor
+
+mkdir EPI_applyepic
+mkdir EPI_applytopup
+mkdir EPI_raw_DSC
+
+cd EPI_applyepic
+
+cp -v ../../epi_corrections_out_2019_07_02_native/EPI_applyepic/orig-dirs.txt .
+
+cd EPI_applytopup
+
+cp -v ../../epi_corrections_out_2019_07_02_native/EPI_applytopup/orig-dirs.txt .
+
+cd EPI_raw_DSC
+
+cp -v ../../epi_corrections_out_2019_07_02_native/EPI_raw_DSC/orig-dirs.txt .
+
+- in each of the new EPI_applyepic, etc. dirs
+
+xargs mkdir -p <orig-dirs.txt
+
+- cd to respective original (now epi_corrections_out_2019_07_02_native) EPI_applyepic, etc. dirs and copy only the files we want to the new dirs
+
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native_wtumor/EPI_applyepic/file
+
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native_wtumor/EPI_applytopup/file
+
+find . -type f | grep -E -v "_coregest|/r_|/wr_|/y_|/_e" | xargs -I file cp -v file ../../epi_corrections_out_2019_07_02_native_wtumor/EPI_raw_DSC/file
