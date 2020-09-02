@@ -74,6 +74,16 @@ if __name__ == "__main__":
     # Perform the Wilcoxon test on each roi (Necrotic, Enhancing and Edema) if at least 10 samples available
     for i in range(num_rois):
         if len(allrawmedians_nonan[i]) >= 10 and len(allcormedians_nonan[i]) >= 10:
+            print(tumorroinames[i])
+            print("Raw median")
+            rmed = np.median(allrawmedians_nonan[i])
+            print(rmed)
+            print("Corrected median")
+            cmed = np.median(allcormedians_nonan[i])
+            print(cmed)
+            print("Corrected-Raw median")
+            crmeddiff = cmed-rmed
+            print(crmeddiff)
             wilcoxonresults[:, i] = wilcoxon(allrawmedians_nonan[i], allcormedians_nonan[i])
     
     # How to sort the regions
@@ -97,3 +107,6 @@ if __name__ == "__main__":
     toppvalues = wilcoxonresults[1, :][sortidx][:top]
     print("p-values are: ")
     print(toppvalues)
+    statistic = wilcoxonresults[0, :][sortidx][:top]
+    print("wilcoxon statistics: ")
+    print(statistic)
