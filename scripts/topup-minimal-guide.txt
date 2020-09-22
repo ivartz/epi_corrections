@@ -1,0 +1,12 @@
+cd epi_corrections/docker
+bash generate_dockerfile_topup_only_cmd.sh
+bash build.sh
+# cd to the place that you want to run topup
+bash <epi_corrections dir>/docker/run.sh
+
+
+
+#docker run -v $(pwd):/home/$USER epi-corrections-docker scripts/applytopup.sh DSC.nii topupd/generic_out aquisition_parameters_opposite.txt DSC_corr.nii
+#docker run -v $(pwd):/home/$USER epi-corrections-docker scripts/applytopup.sh DSC.nii topupd/generic_out aquisition_parameters_opposite.txt DSC_corr.nii
+
+TODO

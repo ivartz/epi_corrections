@@ -5,7 +5,10 @@ topupresults=$2
 param=$3
 outfile=$4
 
+# Assuming infile has the file extension *.nii
+
 startdir=$(pwd)
+scriptdir="$(dirname $0)"
 
 filetype_command="FSLOUTPUTTYPE=NIFTI"
 
@@ -29,6 +32,8 @@ cp_command="cp -v $infile $outdir/$workfilenamewe"
 echo $cp_command
 eval $cp_command
 
+bash $scriptdir/add-duplicate-slices.sh $workfilenamewe $outdir
+: '
 # Add duplicate top and bottom z slice
 
 output_base="raw_$infilename"
@@ -74,6 +79,7 @@ output_prep_command="fslmerge -z $output_prep \
                                  $output_zmax"
 echo $output_prep_command
 eval $output_prep_command
+'
 
 # Apply field (topup results)
 
