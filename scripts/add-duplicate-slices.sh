@@ -1,14 +1,15 @@
-# bash add-duplicate-slices.sh workfile outdir
+: '
+bash add-duplicate-slices.sh workfile outdir
+'
 
 workfile=$1
 outdir=$2
 
 # Add duplicate top and bottom z slice
-
 output_base=${workfile%.nii}
-output_zmin="${output_base}_zmin"
-output_zmax="${output_base}_zmax"
-output_prep="${output_base}_prep_topup"
+output_zmin=${output_base}_zmin
+output_zmax=${output_base}_zmax
+output_prep=${output_base}_prep_topup
 
 cd_command="cd $outdir"
 
