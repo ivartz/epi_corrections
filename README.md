@@ -1,5 +1,5 @@
 # epi_corrections
-Python script for pipeline implementation for correction of 
+Pipeline for correction of 
 magnetic susceptibility induced (geometric and intensity) 
 artefacts from off-resonance field in EPI MRI images. 
 Using FSL TOPUP and EPIC.
