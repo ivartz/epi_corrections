@@ -4,6 +4,11 @@ magnetic susceptibility induced (geometric and intensity)
 artefacts from off-resonance field in EPI MRI images. 
 Using FSL TOPUP and EPIC.
 
+## Update: Running on a single EPI pair
+
+- TOPUP: Install FSL and have a look at https://github.com/ivartz/epi_corrections/blob/master/scripts/applytopup.sh and https://github.com/ivartz/epi_corrections/blob/master/scripts/computetopup.sh
+- EPIC: Install the Computational Morphometry Toolkit (https://neuro.debian.net/pkgs/cmtk.html) and have a look at https://www.nitrc.org/docman/view.php/212/1187/UnwarpEchoPlanar.pdf
+
 ## Methods
 
 See reports/PosterHovden.pdf (NFMF MedFys 2019).
